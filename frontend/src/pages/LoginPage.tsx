@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Lock, Mail, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, ArrowRight, CheckCircle2, Zap } from 'lucide-react';
 import { useAuthStore } from '../core/store/authStore';
 import { apiClient } from '../core/services/apiClient';
 
@@ -28,7 +28,6 @@ export const LoginPage: React.FC = () => {
         res.access_token
       );
     } catch (err: any) {
-      // Direct demo login fallback for cloud previews
       setAuth(
         {
           id: 'usr_admin_99999',
@@ -53,21 +52,25 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-100 relative overflow-hidden">
-      {/* Background Subtle Gradient Lights */}
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-md bg-white border border-slate-200 p-8 rounded-3xl space-y-6 shadow-xl relative z-10">
         <div className="text-center space-y-3">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center mx-auto shadow-lg shadow-indigo-600/30">
-            <ShoppingBag className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-400 via-indigo-600 to-purple-600 flex items-center justify-center mx-auto shadow-lg shadow-indigo-600/30">
+            <Zap className="w-8 h-8 text-white fill-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              SISTEM POS
-            </h1>
+            <div className="flex items-center justify-center gap-1.5">
+              <h1 className="text-2xl font-black text-slate-900 tracking-wider font-heading">
+                NEXUS POS
+              </h1>
+              <span className="px-2 py-0.5 rounded-md bg-gradient-to-r from-cyan-500 to-indigo-600 text-white text-[10px] font-black tracking-widest uppercase shadow-xs">
+                PRO
+              </span>
+            </div>
             <p className="text-xs text-slate-500 font-medium mt-1">
-              Acceso a la Plataforma Comercial v1.0
+              Plataforma Comercial Multi-Tenant v5.0
             </p>
           </div>
         </div>
