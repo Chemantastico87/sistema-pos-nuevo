@@ -1,4 +1,4 @@
 import React from 'react';
-import { CashRegisterModal } from '../components/cash/CashRegisterModal';
+import { CashRegisterView } from '../components/cash/CashRegisterView';
 
-export const CashPage: React.FC = () => <CashRegisterModal />;
+export const CashPage: React.FC = () => <CashRegisterView />;

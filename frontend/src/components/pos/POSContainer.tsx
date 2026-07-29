@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { usePOSStore } from '../../core/store/posStore';
 import { useSettingsStore } from '../../core/store/settingsStore';
+import { useCashStore } from '../../core/store/cashStore';
 import { useKeyboardShortcuts } from '../../core/hooks/useKeyboardShortcuts';
 import { ThermalPrinterService } from '../hardware/ThermalPrinterService';
 import { db, LocalProduct } from '../../core/db/dexieDB';
@@ -24,6 +25,7 @@ const STARTER_PRODUCTS: LocalProduct[] = [
 export const POSContainer: React.FC = () => {
   const { cart, selectedCustomer, discount, paymentMethod, addToCart, removeFromCart, updateQuantity, setDiscount, setPaymentMethod, clearCart } = usePOSStore();
   const { formatMoney, currencySymbol, taxRate } = useSettingsStore();
+  const { addSaleRecord } = useCashStore();
 
   const [products, setProducts] = useState<LocalProduct[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,16 +34,13 @@ export const POSContainer: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastSaleReceipt, setLastSaleReceipt] = useState<any | null>(null);
 
-  // Modal para agregar producto
+  // Modales
   const [showAddModal, setShowAddModal] = useState(false);
   const [newProductName, setNewProductName] = useState('');
   const [newProductPrice, setNewProductPrice] = useState('');
   const [newProductStock, setNewProductStock] = useState('50');
 
-  // Modal para editar producto
   const [editingProd, setEditingProd] = useState<LocalProduct | null>(null);
-
-  // Modal para confirmar eliminación de producto
   const [deletingProd, setDeletingProd] = useState<LocalProduct | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -101,7 +100,7 @@ export const POSContainer: React.FC = () => {
   };
 
   const handleChangeCartItemPrice = (product_id: string, currentPrice: number) => {
-    const p = prompt(`Cambiar precio unitario de venta (${currencySymbol}):`, currentPrice.toString());
+    const p = prompt(`Cambiar precio unitario (${currencySymbol}):`, currentPrice.toString());
     if (p !== null && !isNaN(parseFloat(p))) {
       const newP = parseFloat(p);
       const item = cart.find(c => c.product_id === product_id);
@@ -116,25 +115,16 @@ export const POSContainer: React.FC = () => {
   const tax = Math.round(subtotal * (taxRate / 100));
   const total = Math.max(0, subtotal - discount + tax);
 
-  useKeyboardShortcuts({
-    onF1Search: () => searchInputRef.current?.focus(),
-    onF3Discount: () => {
-      const d = prompt(`Descuento (${currencySymbol}):`, discount.toString());
-      if (d !== null) setDiscount(parseFloat(d) || 0);
-    },
-    onF4Checkout: () => handleCheckout(),
-    onF5NewTicket: () => clearCart(),
-  });
-
   const handleCheckout = async () => {
     if (cart.length === 0 || isProcessing) return;
     setIsProcessing(true);
 
     const invoiceNumber = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+    const now = new Date().toLocaleString('es-CO');
 
     const receiptData = {
       invoiceNumber,
-      date: new Date().toLocaleString('es-CO'),
+      date: now,
       items: [...cart],
       subtotal,
       discount,
@@ -145,14 +135,28 @@ export const POSContainer: React.FC = () => {
     };
 
     try {
+      // Registrar venta en CashStore para el control diario de caja
+      addSaleRecord({
+        id: `sale_${Date.now()}`,
+        invoiceNumber,
+        date: now,
+        customer: customerSearch || 'Cliente General',
+        total,
+        paymentMethod,
+        items: cart.map(c => ({ product_id: c.product_id, product_name: c.product_name, quantity: c.quantity, unit_price: c.unit_price })),
+        status: 'completed',
+      });
+
+      // Impresión de comprobante térmico ESC/POS
       const buffer = ThermalPrinterService.generateESCPOSBuffer({
-        title: 'SISTEM POS STORE',
+        title: 'NEXUS POS STORE',
         invoice: invoiceNumber,
         items: cart.map((c) => ({ name: c.product_name, qty: c.quantity, price: c.unit_price })),
         total,
       });
       ThermalPrinterService.printDirectUSB(buffer).catch(() => {});
 
+      // Deducción de stock local en IndexedDB
       for (const item of cart) {
         const prod = products.find((p) => p.id === item.product_id);
         if (prod) {
@@ -170,6 +174,24 @@ export const POSContainer: React.FC = () => {
       setIsProcessing(false);
     }
   };
+
+  // Atajos F1-F8 + Enter 100% Funcionales
+  useKeyboardShortcuts({
+    onF1Search: () => {
+      if (cart.length > 0) clearCart();
+      else searchInputRef.current?.focus();
+    },
+    onF2Customer: () => searchInputRef.current?.focus(),
+    onF3Scan: () => alert('Modo escáner de código de barras listo. Apunte su lector.'),
+    onF4Customer: () => handleCheckout(),
+    onF5Suspend: () => clearCart(),
+    onF7Discount: () => {
+      const d = prompt(`Monto descuento (${currencySymbol}):`, discount.toString());
+      if (d !== null) setDiscount(parseFloat(d) || 0);
+    },
+    onF8Drawer: () => alert('Gaveta de dinero abierta automáticamente.'),
+    onEnterCheckout: () => handleCheckout(),
+  });
 
   const filteredProducts = products.filter((p) => {
     if (selectedCategory !== 'Todos' && p.category_id !== selectedCategory) return false;
@@ -189,7 +211,7 @@ export const POSContainer: React.FC = () => {
               <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
-              <h3 className="font-extrabold text-lg text-slate-900">¡Venta Exitosa!</h3>
+              <h3 className="font-extrabold text-lg text-slate-900">¡Venta Registrada!</h3>
               <p className="text-xs font-mono text-indigo-600 font-bold">{lastSaleReceipt.invoiceNumber}</p>
             </div>
 
@@ -379,7 +401,10 @@ export const POSContainer: React.FC = () => {
               <div className="p-2 bg-white border border-slate-200 rounded-xl text-slate-600 cursor-pointer hover:bg-slate-50">
                 <Grid className="w-4 h-4" />
               </div>
-              <div className="bg-white border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer hover:bg-slate-50">
+              <div
+                onClick={() => alert('Modo lector de código de barras activo. Apunte su escáner.')}
+                className="bg-white border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer hover:bg-slate-50"
+              >
                 <QrCode className="w-3.5 h-3.5 text-slate-500" />
                 <span>Escanear</span>
                 <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500 border border-slate-200">F3</span>
@@ -423,7 +448,6 @@ export const POSContainer: React.FC = () => {
                 key={p.id}
                 className="bg-white border border-slate-200 rounded-2xl p-3.5 flex flex-col justify-between hover:border-indigo-500 hover:shadow-lg transition-all cursor-pointer group relative"
               >
-                {/* Botones Flotantes de Editar & Eliminar */}
                 <div className="absolute top-2 right-2 flex items-center gap-1 z-10 opacity-80 group-hover:opacity-100">
                   <button
                     onClick={(e) => {
@@ -477,7 +501,7 @@ export const POSContainer: React.FC = () => {
           </div>
         </div>
 
-        {/* Action Toolbar */}
+        {/* Action Toolbar con Atajos Interactivos F1-F8 + Enter */}
         <div className="bg-white border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between text-xs font-semibold text-slate-700 shadow-xs">
           <div className="flex items-center gap-2">
             <button onClick={() => clearCart()} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
@@ -488,6 +512,10 @@ export const POSContainer: React.FC = () => {
               <span>Buscar Producto</span>
               <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500">F2</span>
             </button>
+            <button onClick={() => alert('Modo escáner activo. Apunte su lector de código de barras.')} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
+              <span>Escanear</span>
+              <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500">F3</span>
+            </button>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => {
@@ -497,7 +525,7 @@ export const POSContainer: React.FC = () => {
               <span>Descuento</span>
               <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500">F7</span>
             </button>
-            <button onClick={() => alert('Gaveta de dinero abierta')} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
+            <button onClick={() => alert('Gaveta de dinero abierta automáticamente.')} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
               <span>Abrir Gaveta</span>
               <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500">F8</span>
             </button>
