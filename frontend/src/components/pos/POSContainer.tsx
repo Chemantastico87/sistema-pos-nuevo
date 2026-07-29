@@ -1,37 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Star, ShoppingCart, Trash2, Plus, Minus, CreditCard, DollarSign, 
   User, Printer, CheckCircle2, QrCode, Grid, Layers, RefreshCw, Search,
-  Coffee, Cookie, Milk, ShoppingBag, Sparkles, Box, PlusCircle, Package
+  Coffee, Cookie, Milk, ShoppingBag, Sparkles, Box, PlusCircle, Package, Receipt, Check
 } from 'lucide-react';
 import { usePOSStore } from '../../core/store/posStore';
 import { useKeyboardShortcuts } from '../../core/hooks/useKeyboardShortcuts';
 import { ThermalPrinterService } from '../hardware/ThermalPrinterService';
 import { db, LocalProduct } from '../../core/db/dexieDB';
 
+const STARTER_PRODUCTS: LocalProduct[] = [
+  { id: 'prod_1', company_id: 'c1', name: 'Agua Mineral 600ml', price: 1200, cost_price: 700, stock: 150, category_id: 'Bebidas' },
+  { id: 'prod_2', company_id: 'c1', name: 'Coca Cola 600ml', price: 2500, cost_price: 1800, stock: 85, category_id: 'Bebidas' },
+  { id: 'prod_3', company_id: 'c1', name: 'Papas Rizadas Sal 45g', price: 3200, cost_price: 2100, stock: 60, category_id: 'Snacks' },
+  { id: 'prod_4', company_id: 'c1', name: 'Leche Entera 1L', price: 3800, cost_price: 2900, stock: 40, category_id: 'Lácteos' },
+  { id: 'prod_5', company_id: 'c1', name: 'Arroz Blanco 1kg', price: 4200, cost_price: 3100, stock: 70, category_id: 'Abarrotes' },
+  { id: 'prod_6', company_id: 'c1', name: 'Aceite Vegetal 1L', price: 6500, cost_price: 4800, stock: 30, category_id: 'Abarrotes' },
+  { id: 'prod_7', company_id: 'c1', name: 'Jabón en Polvo 1kg', price: 5900, cost_price: 4100, stock: 25, category_id: 'Limpieza' },
+  { id: 'prod_8', company_id: 'c1', name: 'Pan de Molde Blanco', price: 2900, stock: 45, cost_price: 1900, category_id: 'Snacks' },
+];
+
 export const POSContainer: React.FC = () => {
   const { cart, selectedCustomer, discount, paymentMethod, addToCart, removeFromCart, updateQuantity, setDiscount, setPaymentMethod, clearCart } = usePOSStore();
   const [products, setProducts] = useState<LocalProduct[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
-  const [filterType, setFilterType] = useState<'all' | 'fav' | 'promo'>('all');
   const [customerSearch, setCustomerSearch] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [lastSaleReceipt, setLastSaleReceipt] = useState<any | null>(null);
 
-  // Modal para agregar nuevo producto
+  // Modal para agregar producto
   const [showAddModal, setShowAddModal] = useState(false);
   const [newProductName, setNewProductName] = useState('');
   const [newProductPrice, setNewProductPrice] = useState('');
-  const [newProductStock, setNewProductStock] = useState('');
-  const [newProductCategory, setNewProductCategory] = useState('General');
+  const [newProductStock, setNewProductStock] = useState('50');
 
-  // Cargar productos de IndexedDB
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Cargar productos de IndexedDB o sembrar catálogo inicial listo para vender
   useEffect(() => {
-    const loadProducts = async () => {
-      const localProds = await db.products.toArray();
+    const initProducts = async () => {
+      let localProds = await db.products.toArray();
+      if (localProds.length === 0) {
+        await db.products.bulkAdd(STARTER_PRODUCTS);
+        localProds = STARTER_PRODUCTS;
+      }
       setProducts(localProds);
     };
-    loadProducts();
+    initProducts();
   }, []);
 
   const handleAddProduct = async (e: React.FormEvent) => {
@@ -43,16 +59,15 @@ export const POSContainer: React.FC = () => {
       company_id: 'comp_demo',
       name: newProductName,
       price: parseFloat(newProductPrice) || 0,
-      cost_price: 0,
+      cost_price: Math.round((parseFloat(newProductPrice) || 0) * 0.7),
       stock: parseFloat(newProductStock) || 0,
-      category_id: newProductCategory,
+      category_id: selectedCategory !== 'Todos' ? selectedCategory : 'General',
     };
 
     await db.products.add(newProd);
     setProducts((prev) => [...prev, newProd]);
     setNewProductName('');
     setNewProductPrice('');
-    setNewProductStock('');
     setShowAddModal(false);
   };
 
@@ -60,9 +75,11 @@ export const POSContainer: React.FC = () => {
   const tax = Math.round(subtotal * 0.19);
   const total = Math.max(0, subtotal - discount + tax);
 
+  // Atajos F1-F8 + Enter
   useKeyboardShortcuts({
+    onF1Search: () => searchInputRef.current?.focus(),
     onF3Discount: () => {
-      const d = prompt('Descuento ($):', discount.toString());
+      const d = prompt('Ingresa monto de descuento ($):', discount.toString());
       if (d !== null) setDiscount(parseFloat(d) || 0);
     },
     onF4Checkout: () => handleCheckout(),
@@ -73,20 +90,43 @@ export const POSContainer: React.FC = () => {
     if (cart.length === 0 || isProcessing) return;
     setIsProcessing(true);
 
+    const invoiceNumber = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const receiptData = {
+      invoiceNumber,
+      date: new Date().toLocaleString('es-CO'),
+      items: [...cart],
+      subtotal,
+      discount,
+      tax,
+      total,
+      paymentMethod,
+      customer: customerSearch || 'Cliente General',
+    };
+
     try {
-      const invoice = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+      // Intentar impresión térmica ESC/POS
       const buffer = ThermalPrinterService.generateESCPOSBuffer({
-        title: 'SISTEM POS',
-        invoice,
+        title: 'SISTEM POS DEMO STORE',
+        invoice: invoiceNumber,
         items: cart.map((c) => ({ name: c.product_name, qty: c.quantity, price: c.unit_price })),
         total,
       });
       ThermalPrinterService.printDirectUSB(buffer).catch(() => {});
 
-      setSuccessMsg(`¡Venta #${invoice} procesada con éxito!`);
+      // Deducción de stock local en IndexedDB
+      for (const item of cart) {
+        const prod = products.find((p) => p.id === item.product_id);
+        if (prod) {
+          const newStock = Math.max(0, prod.stock - item.quantity);
+          await db.products.update(prod.id, { stock: newStock });
+        }
+      }
+      setProducts(await db.products.toArray());
+
+      setLastSaleReceipt(receiptData);
       clearCart();
-      setTimeout(() => setSuccessMsg(null), 3000);
-    } catch (err: any) {
+    } catch (err) {
       clearCart();
     } finally {
       setIsProcessing(false);
@@ -95,94 +135,123 @@ export const POSContainer: React.FC = () => {
 
   const filteredProducts = products.filter((p) => {
     if (selectedCategory !== 'Todos' && p.category_id !== selectedCategory) return false;
+    if (searchQuery.trim() !== '') {
+      return p.name.toLowerCase().includes(searchQuery.toLowerCase());
+    }
     return true;
   });
 
   return (
     <div className="h-[calc(100vh-5rem)] flex gap-5 overflow-hidden p-1">
-      {/* Modal Agregar Producto */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-md space-y-5 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
-                <PlusCircle className="w-5 h-5 text-indigo-600" /> Crear Nuevo Producto
-              </h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600 font-bold">
-                ✕
-              </button>
+      {/* Modal Ticket de Venta Exitoso */}
+      {lastSaleReceipt && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="text-center space-y-2 border-b border-slate-100 pb-4">
+              <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <h3 className="font-extrabold text-lg text-slate-900">¡Venta Exitosa!</h3>
+              <p className="text-xs font-mono text-indigo-600 font-bold">{lastSaleReceipt.invoiceNumber}</p>
             </div>
 
-            <form onSubmit={handleAddProduct} className="space-y-4">
+            <div className="space-y-2 text-xs text-slate-700">
+              <div className="flex justify-between font-medium">
+                <span>Cliente:</span>
+                <span>{lastSaleReceipt.customer}</span>
+              </div>
+              <div className="flex justify-between font-medium">
+                <span>Método de Pago:</span>
+                <span className="capitalize font-bold text-slate-900">{lastSaleReceipt.paymentMethod}</span>
+              </div>
+              <div className="border-t border-dashed border-slate-200 pt-2 space-y-1">
+                {lastSaleReceipt.items.map((it: any) => (
+                  <div key={it.product_id} className="flex justify-between text-[11px]">
+                    <span>{it.quantity}x {it.product_name}</span>
+                    <span className="font-semibold">${(it.quantity * it.unit_price).toLocaleString('es-CO')}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-slate-200 pt-2 flex justify-between font-extrabold text-sm text-slate-900">
+                <span>TOTAL:</span>
+                <span className="text-indigo-600">${lastSaleReceipt.total.toLocaleString('es-CO')}</span>
+              </div>
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <button
+                onClick={() => setLastSaleReceipt(null)}
+                className="w-full py-3 rounded-xl bg-indigo-600 text-white font-extrabold text-xs shadow-md shadow-indigo-600/30 hover:bg-indigo-700"
+              >
+                Siguiente Venta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Crear Nuevo Producto */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-indigo-600" /> Crear Producto
+              </h3>
+              <button onClick={() => setShowAddModal(false)} className="text-slate-400 font-bold hover:text-slate-600">✕</button>
+            </div>
+            <form onSubmit={handleAddProduct} className="space-y-3 text-xs">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Nombre del Producto</label>
+                <label className="font-bold text-slate-700 block mb-1">Nombre</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ej: Café Capuchino 300ml"
+                  placeholder="Ej. Café Capuchino 300ml"
                   value={newProductName}
                   onChange={(e) => setNewProductName(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 rounded-xl px-3.5 py-2 text-sm text-slate-800 outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none"
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Precio Venta ($)</label>
+                  <label className="font-bold text-slate-700 block mb-1">Precio Venta ($)</label>
                   <input
                     type="number"
                     required
                     placeholder="3500"
                     value={newProductPrice}
                     onChange={(e) => setNewProductPrice(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 rounded-xl px-3.5 py-2 text-sm text-slate-800 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Stock Inicial</label>
+                  <label className="font-bold text-slate-700 block mb-1">Stock Inicial</label>
                   <input
                     type="number"
-                    placeholder="50"
                     value={newProductStock}
                     onChange={(e) => setNewProductStock(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 rounded-xl px-3.5 py-2 text-sm text-slate-800 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none"
                   />
                 </div>
               </div>
-
               <div className="pt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="w-1/2 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="w-1/2 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold shadow-md shadow-indigo-600/30 hover:opacity-95"
-                >
-                  Guardar Producto
-                </button>
+                <button type="button" onClick={() => setShowAddModal(false)} className="w-1/2 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600">Cancelar</button>
+                <button type="submit" className="w-1/2 py-2.5 rounded-xl bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30">Guardar</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Columna Izquierda: Catálogo de Productos */}
+      {/* Columna Izquierda: Catálogo & Productos */}
       <div className="flex-1 flex flex-col justify-between gap-4 overflow-hidden">
         <div className="space-y-4 overflow-y-auto pr-1">
           {/* Top Filter Bar */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setFilterType('all')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  filterType === 'all'
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-600/30'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
+                onClick={() => setSelectedCategory('Todos')}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-600/30"
               >
                 Todos los productos
               </button>
@@ -235,67 +304,47 @@ export const POSContainer: React.FC = () => {
             })}
           </div>
 
-          {/* Grid de Productos o Estado Vacío */}
-          {filteredProducts.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center space-y-4 my-6 shadow-xs">
-              <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
-                <Package className="w-8 h-8" />
-              </div>
-              <div className="space-y-1 max-w-sm mx-auto">
-                <h3 className="font-extrabold text-base text-slate-900">Catálogo de Productos Vacío</h3>
-                <p className="text-xs text-slate-500">
-                  Aún no tienes productos registrados. Haz clic en el botón de abajo para registrar tus propios productos de tienda.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 hover:opacity-95"
+          {/* Grid de Productos */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {filteredProducts.map((p) => (
+              <div
+                key={p.id}
+                onClick={() =>
+                  addToCart({
+                    product_id: p.id,
+                    product_name: p.name,
+                    quantity: 1,
+                    unit_price: p.price,
+                  })
+                }
+                className="bg-white border border-slate-200 rounded-2xl p-3.5 flex flex-col justify-between hover:border-indigo-500 hover:shadow-lg transition-all cursor-pointer group relative"
               >
-                + Crear Primer Producto
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {filteredProducts.map((p) => (
-                <div
-                  key={p.id}
-                  onClick={() =>
-                    addToCart({
-                      product_id: p.id,
-                      product_name: p.name,
-                      quantity: 1,
-                      unit_price: p.price,
-                    })
-                  }
-                  className="bg-white border border-slate-200 rounded-2xl p-3.5 flex flex-col justify-between hover:border-indigo-500 hover:shadow-lg transition-all cursor-pointer group relative"
-                >
-                  <div className="h-24 flex items-center justify-center mb-2 overflow-hidden rounded-xl bg-slate-50 group-hover:scale-105 transition-transform">
-                    <Package className="w-10 h-10 text-indigo-400 opacity-60" />
-                  </div>
-
-                  <div className="space-y-1">
-                    <h3 className="font-semibold text-xs text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
-                      {p.name}
-                    </h3>
-                    <p className="text-base font-extrabold text-slate-900">${p.price.toLocaleString('es-CO')}</p>
-                    <span className="inline-block text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                      Stock: {p.stock}
-                    </span>
-                  </div>
+                <div className="h-24 flex items-center justify-center mb-2 overflow-hidden rounded-xl bg-slate-50 group-hover:scale-105 transition-transform">
+                  <Package className="w-10 h-10 text-indigo-400 opacity-60" />
                 </div>
-              ))}
-            </div>
-          )}
+
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-xs text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                    {p.name}
+                  </h3>
+                  <p className="text-base font-extrabold text-slate-900">${p.price.toLocaleString('es-CO')}</p>
+                  <span className="inline-block text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                    Stock: {p.stock}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Bottom Toolbar Action Buttons */}
+        {/* Action Toolbar */}
         <div className="bg-white border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between text-xs font-semibold text-slate-700 shadow-xs">
           <div className="flex items-center gap-2">
             <button onClick={() => clearCart()} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
               <span>Nueva Venta</span>
               <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500">F1</span>
             </button>
-            <button className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
+            <button onClick={() => searchInputRef.current?.focus()} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
               <span>Buscar Producto</span>
               <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500">F2</span>
             </button>
@@ -308,7 +357,7 @@ export const POSContainer: React.FC = () => {
               <span>Descuento</span>
               <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500">F7</span>
             </button>
-            <button className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
+            <button onClick={() => alert('Gaveta de dinero abierta')} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
               <span>Abrir Gaveta</span>
               <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500">F8</span>
             </button>
@@ -319,7 +368,6 @@ export const POSContainer: React.FC = () => {
       {/* Columna Derecha: Ticket de Venta */}
       <div className="w-[360px] bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm shrink-0">
         <div className="space-y-4">
-          {/* Header Ticket */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-200">
             <h2 className="font-extrabold text-base text-slate-900">Ticket de venta</h2>
             <div className="flex items-center gap-2">
@@ -329,7 +377,6 @@ export const POSContainer: React.FC = () => {
             </div>
           </div>
 
-          {/* Header Column Table */}
           <div className="grid grid-cols-12 text-[11px] font-bold text-slate-400 uppercase px-1">
             <span className="col-span-5">Producto</span>
             <span className="col-span-2 text-center">Cant.</span>
@@ -337,7 +384,6 @@ export const POSContainer: React.FC = () => {
             <span className="col-span-3 text-right">Total</span>
           </div>
 
-          {/* Cart Items List */}
           <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
             {cart.length === 0 ? (
               <p className="text-center text-slate-400 py-10 text-xs">No hay productos en el ticket</p>
@@ -365,15 +411,8 @@ export const POSContainer: React.FC = () => {
           </div>
         </div>
 
-        {/* Total Summary & Checkout Actions */}
+        {/* Summary & Checkout */}
         <div className="space-y-3 pt-3 border-t border-slate-200">
-          {successMsg && (
-            <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>{successMsg}</span>
-            </div>
-          )}
-
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between text-slate-500 font-medium">
               <span>Subtotal</span>
@@ -393,7 +432,6 @@ export const POSContainer: React.FC = () => {
             </div>
           </div>
 
-          {/* Payment Options Grid */}
           <div className="grid grid-cols-3 gap-2">
             <button
               onClick={() => setPaymentMethod('cash')}
@@ -432,7 +470,6 @@ export const POSContainer: React.FC = () => {
             </button>
           </div>
 
-          {/* Big Cobrar Button */}
           <button
             onClick={handleCheckout}
             disabled={cart.length === 0 || isProcessing}
