@@ -11,6 +11,10 @@ import { CashPage } from './pages/CashPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { TicketsPage } from './pages/TicketsPage';
 import { AuditPage } from './pages/AuditPage';
+import { UsersPage } from './pages/UsersPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { PluginsPage } from './pages/PluginsPage';
+import { ReportsPage } from './pages/ReportsPage';
 
 export const App: React.FC = () => {
   const token = useAuthStore((s) => s.token);
@@ -26,11 +30,15 @@ export const App: React.FC = () => {
           <Route index element={<POSPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="products" element={<ProductsPage />} />
+          <Route path="customers" element={<CustomersPage />} />
           <Route path="inventory" element={<InventoryPage />} />
           <Route path="cash" element={<CashPage />} />
-          <Route path="customers" element={<CustomersPage />} />
-          <Route path="tickets" element={<TicketsPage />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="audit" element={<AuditPage />} />
+          <Route path="tickets" element={<TicketsPage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="plugins" element={<PluginsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
