@@ -2,26 +2,29 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Star, ShoppingCart, Trash2, Plus, Minus, CreditCard, DollarSign, 
   User, Printer, CheckCircle2, QrCode, Grid, Layers, RefreshCw, Search,
-  Coffee, Cookie, Milk, ShoppingBag, Sparkles, Box, PlusCircle, Package, Receipt, Check
+  Coffee, Cookie, Milk, ShoppingBag, Sparkles, Box, PlusCircle, Package, Receipt, Check, Edit3
 } from 'lucide-react';
 import { usePOSStore } from '../../core/store/posStore';
+import { useSettingsStore } from '../../core/store/settingsStore';
 import { useKeyboardShortcuts } from '../../core/hooks/useKeyboardShortcuts';
 import { ThermalPrinterService } from '../hardware/ThermalPrinterService';
 import { db, LocalProduct } from '../../core/db/dexieDB';
 
 const STARTER_PRODUCTS: LocalProduct[] = [
-  { id: 'prod_1', company_id: 'c1', name: 'Agua Mineral 600ml', price: 1200, cost_price: 700, stock: 150, category_id: 'Bebidas' },
-  { id: 'prod_2', company_id: 'c1', name: 'Coca Cola 600ml', price: 2500, cost_price: 1800, stock: 85, category_id: 'Bebidas' },
-  { id: 'prod_3', company_id: 'c1', name: 'Papas Rizadas Sal 45g', price: 3200, cost_price: 2100, stock: 60, category_id: 'Snacks' },
-  { id: 'prod_4', company_id: 'c1', name: 'Leche Entera 1L', price: 3800, cost_price: 2900, stock: 40, category_id: 'Lácteos' },
-  { id: 'prod_5', company_id: 'c1', name: 'Arroz Blanco 1kg', price: 4200, cost_price: 3100, stock: 70, category_id: 'Abarrotes' },
-  { id: 'prod_6', company_id: 'c1', name: 'Aceite Vegetal 1L', price: 6500, cost_price: 4800, stock: 30, category_id: 'Abarrotes' },
-  { id: 'prod_7', company_id: 'c1', name: 'Jabón en Polvo 1kg', price: 5900, cost_price: 4100, stock: 25, category_id: 'Limpieza' },
-  { id: 'prod_8', company_id: 'c1', name: 'Pan de Molde Blanco', price: 2900, stock: 45, cost_price: 1900, category_id: 'Snacks' },
+  { id: 'prod_1', company_id: 'c1', name: 'Agua Mineral 600ml', price: 1.20, cost_price: 0.70, stock: 150, category_id: 'Bebidas' },
+  { id: 'prod_2', company_id: 'c1', name: 'Coca Cola 600ml', price: 2.50, cost_price: 1.80, stock: 85, category_id: 'Bebidas' },
+  { id: 'prod_3', company_id: 'c1', name: 'Papas Rizadas Sal 45g', price: 3.20, cost_price: 2.10, stock: 60, category_id: 'Snacks' },
+  { id: 'prod_4', company_id: 'c1', name: 'Leche Entera 1L', price: 3.80, cost_price: 2.90, stock: 40, category_id: 'Lácteos' },
+  { id: 'prod_5', company_id: 'c1', name: 'Arroz Blanco 1kg', price: 4.20, cost_price: 3.10, stock: 70, category_id: 'Abarrotes' },
+  { id: 'prod_6', company_id: 'c1', name: 'Aceite Vegetal 1L', price: 6.50, cost_price: 4.80, stock: 30, category_id: 'Abarrotes' },
+  { id: 'prod_7', company_id: 'c1', name: 'Jabón en Polvo 1kg', price: 5.90, cost_price: 4.10, stock: 25, category_id: 'Limpieza' },
+  { id: 'prod_8', company_id: 'c1', name: 'Pan de Molde Blanco', price: 2.90, cost_price: 1.90, stock: 45, category_id: 'Snacks' },
 ];
 
 export const POSContainer: React.FC = () => {
   const { cart, selectedCustomer, discount, paymentMethod, addToCart, removeFromCart, updateQuantity, setDiscount, setPaymentMethod, clearCart } = usePOSStore();
+  const { formatMoney, currencySymbol, taxRate } = useSettingsStore();
+
   const [products, setProducts] = useState<LocalProduct[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
@@ -35,9 +38,14 @@ export const POSContainer: React.FC = () => {
   const [newProductPrice, setNewProductPrice] = useState('');
   const [newProductStock, setNewProductStock] = useState('50');
 
+  // Modal para editar producto
+  const [editingProd, setEditingProd] = useState<LocalProduct | null>(null);
+
+  // Modal para confirmar eliminación de producto
+  const [deletingProd, setDeletingProd] = useState<LocalProduct | null>(null);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Cargar productos de IndexedDB o sembrar catálogo inicial listo para vender
   useEffect(() => {
     const initProducts = async () => {
       let localProds = await db.products.toArray();
@@ -71,15 +79,47 @@ export const POSContainer: React.FC = () => {
     setShowAddModal(false);
   };
 
+  const handleSaveEditProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProd) return;
+
+    await db.products.update(editingProd.id, {
+      name: editingProd.name,
+      price: editingProd.price,
+      stock: editingProd.stock,
+    });
+
+    setProducts(await db.products.toArray());
+    setEditingProd(null);
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!deletingProd) return;
+    await db.products.delete(deletingProd.id);
+    setProducts(await db.products.toArray());
+    setDeletingProd(null);
+  };
+
+  const handleChangeCartItemPrice = (product_id: string, currentPrice: number) => {
+    const p = prompt(`Cambiar precio unitario de venta (${currencySymbol}):`, currentPrice.toString());
+    if (p !== null && !isNaN(parseFloat(p))) {
+      const newP = parseFloat(p);
+      const item = cart.find(c => c.product_id === product_id);
+      if (item) {
+        removeFromCart(product_id);
+        addToCart({ ...item, unit_price: newP });
+      }
+    }
+  };
+
   const subtotal = cart.reduce((acc, item) => acc + item.quantity * item.unit_price, 0);
-  const tax = Math.round(subtotal * 0.19);
+  const tax = Math.round(subtotal * (taxRate / 100));
   const total = Math.max(0, subtotal - discount + tax);
 
-  // Atajos F1-F8 + Enter
   useKeyboardShortcuts({
     onF1Search: () => searchInputRef.current?.focus(),
     onF3Discount: () => {
-      const d = prompt('Ingresa monto de descuento ($):', discount.toString());
+      const d = prompt(`Descuento (${currencySymbol}):`, discount.toString());
       if (d !== null) setDiscount(parseFloat(d) || 0);
     },
     onF4Checkout: () => handleCheckout(),
@@ -105,16 +145,14 @@ export const POSContainer: React.FC = () => {
     };
 
     try {
-      // Intentar impresión térmica ESC/POS
       const buffer = ThermalPrinterService.generateESCPOSBuffer({
-        title: 'SISTEM POS DEMO STORE',
+        title: 'SISTEM POS STORE',
         invoice: invoiceNumber,
         items: cart.map((c) => ({ name: c.product_name, qty: c.quantity, price: c.unit_price })),
         total,
       });
       ThermalPrinterService.printDirectUSB(buffer).catch(() => {});
 
-      // Deducción de stock local en IndexedDB
       for (const item of cart) {
         const prod = products.find((p) => p.id === item.product_id);
         if (prod) {
@@ -146,7 +184,7 @@ export const POSContainer: React.FC = () => {
       {/* Modal Ticket de Venta Exitoso */}
       {lastSaleReceipt && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl animate-in fade-in">
             <div className="text-center space-y-2 border-b border-slate-100 pb-4">
               <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-6 h-6" />
@@ -168,13 +206,13 @@ export const POSContainer: React.FC = () => {
                 {lastSaleReceipt.items.map((it: any) => (
                   <div key={it.product_id} className="flex justify-between text-[11px]">
                     <span>{it.quantity}x {it.product_name}</span>
-                    <span className="font-semibold">${(it.quantity * it.unit_price).toLocaleString('es-CO')}</span>
+                    <span className="font-semibold">{formatMoney(it.quantity * it.unit_price)}</span>
                   </div>
                 ))}
               </div>
               <div className="border-t border-slate-200 pt-2 flex justify-between font-extrabold text-sm text-slate-900">
                 <span>TOTAL:</span>
-                <span className="text-indigo-600">${lastSaleReceipt.total.toLocaleString('es-CO')}</span>
+                <span className="text-indigo-600 font-black">{formatMoney(lastSaleReceipt.total)}</span>
               </div>
             </div>
 
@@ -206,7 +244,7 @@ export const POSContainer: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="Ej. Café Capuchino 300ml"
+                  placeholder="Ej. Café Capuchino"
                   value={newProductName}
                   onChange={(e) => setNewProductName(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none"
@@ -214,14 +252,15 @@ export const POSContainer: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Precio Venta ($)</label>
+                  <label className="font-bold text-slate-700 block mb-1">Precio Venta ({currencySymbol})</label>
                   <input
                     type="number"
+                    step="0.01"
                     required
-                    placeholder="3500"
+                    placeholder="3.50"
                     value={newProductPrice}
                     onChange={(e) => setNewProductPrice(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none font-bold"
                   />
                 </div>
                 <div>
@@ -230,7 +269,7 @@ export const POSContainer: React.FC = () => {
                     type="number"
                     value={newProductStock}
                     onChange={(e) => setNewProductStock(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none font-bold"
                   />
                 </div>
               </div>
@@ -239,6 +278,79 @@ export const POSContainer: React.FC = () => {
                 <button type="submit" className="w-1/2 py-2.5 rounded-xl bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30">Guardar</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Producto */}
+      {editingProd && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-indigo-600" /> Editar Producto
+              </h3>
+              <button onClick={() => setEditingProd(null)} className="text-slate-400 font-bold hover:text-slate-600">✕</button>
+            </div>
+            <form onSubmit={handleSaveEditProduct} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nombre</label>
+                <input
+                  type="text"
+                  required
+                  value={editingProd.name}
+                  onChange={(e) => setEditingProd({ ...editingProd, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none font-bold"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Precio ({currencySymbol})</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={editingProd.price}
+                    onChange={(e) => setEditingProd({ ...editingProd, price: parseFloat(e.target.value) || 0 })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Stock</label>
+                  <input
+                    type="number"
+                    value={editingProd.stock}
+                    onChange={(e) => setEditingProd({ ...editingProd, stock: parseFloat(e.target.value) || 0 })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none font-bold"
+                  />
+                </div>
+              </div>
+              <div className="pt-2 flex gap-3">
+                <button type="button" onClick={() => setEditingProd(null)} className="w-1/2 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600">Cancelar</button>
+                <button type="submit" className="w-1/2 py-2.5 rounded-xl bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30">Guardar Cambios</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Eliminar Producto */}
+      {deletingProd && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl text-center">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-extrabold text-base text-slate-900">¿Eliminar Producto?</h3>
+              <p className="text-xs text-slate-500">
+                ¿Confirmas eliminar <span className="font-bold text-slate-800">{deletingProd.name}</span>? Se borrará definitivamente de la tienda.
+              </p>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setDeletingProd(null)} className="w-1/2 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 text-xs">Cancelar</button>
+              <button onClick={handleDeleteProduct} className="w-1/2 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-md shadow-rose-600/30 hover:bg-rose-700">Eliminar</button>
+            </div>
           </div>
         </div>
       )}
@@ -309,28 +421,56 @@ export const POSContainer: React.FC = () => {
             {filteredProducts.map((p) => (
               <div
                 key={p.id}
-                onClick={() =>
-                  addToCart({
-                    product_id: p.id,
-                    product_name: p.name,
-                    quantity: 1,
-                    unit_price: p.price,
-                  })
-                }
                 className="bg-white border border-slate-200 rounded-2xl p-3.5 flex flex-col justify-between hover:border-indigo-500 hover:shadow-lg transition-all cursor-pointer group relative"
               >
-                <div className="h-24 flex items-center justify-center mb-2 overflow-hidden rounded-xl bg-slate-50 group-hover:scale-105 transition-transform">
-                  <Package className="w-10 h-10 text-indigo-400 opacity-60" />
+                {/* Botones Flotantes de Editar & Eliminar */}
+                <div className="absolute top-2 right-2 flex items-center gap-1 z-10 opacity-80 group-hover:opacity-100">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingProd(p);
+                    }}
+                    className="p-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-100"
+                    title="Editar Producto"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeletingProd(p);
+                    }}
+                    className="p-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100"
+                    title="Eliminar Producto"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
                 </div>
 
-                <div className="space-y-1">
-                  <h3 className="font-semibold text-xs text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
-                    {p.name}
-                  </h3>
-                  <p className="text-base font-extrabold text-slate-900">${p.price.toLocaleString('es-CO')}</p>
-                  <span className="inline-block text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                    Stock: {p.stock}
-                  </span>
+                <div
+                  onClick={() =>
+                    addToCart({
+                      product_id: p.id,
+                      product_name: p.name,
+                      quantity: 1,
+                      unit_price: p.price,
+                    })
+                  }
+                  className="space-y-2"
+                >
+                  <div className="h-24 flex items-center justify-center mb-1 overflow-hidden rounded-xl bg-slate-50 group-hover:scale-105 transition-transform">
+                    <Package className="w-10 h-10 text-indigo-400 opacity-60" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-xs text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                      {p.name}
+                    </h3>
+                    <p className="text-base font-extrabold text-slate-900">{formatMoney(p.price)}</p>
+                    <span className="inline-block text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                      Stock: {p.stock}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -351,7 +491,7 @@ export const POSContainer: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => {
-              const d = prompt('Monto descuento ($):', discount.toString());
+              const d = prompt(`Monto descuento (${currencySymbol}):`, discount.toString());
               if (d !== null) setDiscount(parseFloat(d) || 0);
             }} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
               <span>Descuento</span>
@@ -396,11 +536,15 @@ export const POSContainer: React.FC = () => {
                   <div className="col-span-2 text-center font-bold text-slate-700">
                     {item.quantity}
                   </div>
-                  <div className="col-span-2 text-right font-medium text-slate-600">
-                    ${item.unit_price.toLocaleString('es-CO')}
+                  <div
+                    onClick={() => handleChangeCartItemPrice(item.product_id, item.unit_price)}
+                    className="col-span-2 text-right font-bold text-indigo-600 cursor-pointer hover:underline"
+                    title="Haz clic para cambiar precio"
+                  >
+                    {formatMoney(item.unit_price)}
                   </div>
                   <div className="col-span-3 text-right font-bold text-slate-900 flex items-center justify-end gap-1">
-                    <span>${(item.quantity * item.unit_price).toLocaleString('es-CO')}</span>
+                    <span>{formatMoney(item.quantity * item.unit_price)}</span>
                     <button onClick={() => removeFromCart(item.product_id)} className="text-slate-300 hover:text-rose-500">
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -416,19 +560,19 @@ export const POSContainer: React.FC = () => {
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between text-slate-500 font-medium">
               <span>Subtotal</span>
-              <span className="font-semibold text-slate-800">${subtotal.toLocaleString('es-CO')}</span>
+              <span className="font-semibold text-slate-800">{formatMoney(subtotal)}</span>
             </div>
             <div className="flex justify-between text-slate-500 font-medium">
               <span>Descuento</span>
-              <span className="font-semibold text-slate-800">${discount.toLocaleString('es-CO')}</span>
+              <span className="font-semibold text-slate-800">{formatMoney(discount)}</span>
             </div>
             <div className="flex justify-between text-slate-500 font-medium">
-              <span>Impuestos (19%)</span>
-              <span className="font-semibold text-slate-800">${tax.toLocaleString('es-CO')}</span>
+              <span>Impuestos ({taxRate}%)</span>
+              <span className="font-semibold text-slate-800">{formatMoney(tax)}</span>
             </div>
             <div className="flex justify-between items-baseline pt-2 border-t border-slate-200">
               <span className="font-extrabold text-sm text-slate-900">TOTAL</span>
-              <span className="font-black text-2xl text-indigo-600">${total.toLocaleString('es-CO')}</span>
+              <span className="font-black text-2xl text-indigo-600">{formatMoney(total)}</span>
             </div>
           </div>
 

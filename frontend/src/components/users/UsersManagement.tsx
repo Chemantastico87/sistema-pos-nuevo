@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserCheck, UserPlus, Shield, Check, Lock, Mail, User, Trash2, Edit3, ShieldAlert, Key } from 'lucide-react';
 
 export interface UserPermission {
@@ -25,33 +25,42 @@ interface UserData {
   status: 'active' | 'inactive';
 }
 
+const INITIAL_USERS: UserData[] = [
+  {
+    id: 'usr_1',
+    name: 'Admin Administrador',
+    email: 'admin@possaas.com',
+    role: 'admin',
+    permissions: ['can_change_price', 'can_delete_sale', 'can_open_cash_register', 'can_view_profit', 'can_manage_inventory', 'can_manage_users'],
+    status: 'active',
+  },
+  {
+    id: 'usr_2',
+    name: 'Carlos Cajero',
+    email: 'cajero1@possaas.com',
+    role: 'cashier',
+    permissions: ['can_open_cash_register'],
+    status: 'active',
+  },
+  {
+    id: 'usr_3',
+    name: 'María Supervisora',
+    email: 'supervisor@possaas.com',
+    role: 'supervisor',
+    permissions: ['can_change_price', 'can_open_cash_register', 'can_view_profit', 'can_manage_inventory'],
+    status: 'active',
+  },
+];
+
 export const UsersManagement: React.FC = () => {
-  const [users, setUsers] = useState<UserData[]>([
-    {
-      id: 'usr_1',
-      name: 'Admin Administrador',
-      email: 'admin@possaas.com',
-      role: 'admin',
-      permissions: ['can_change_price', 'can_delete_sale', 'can_open_cash_register', 'can_view_profit', 'can_manage_inventory', 'can_manage_users'],
-      status: 'active',
-    },
-    {
-      id: 'usr_2',
-      name: 'Carlos Cajero',
-      email: 'cajero1@possaas.com',
-      role: 'cashier',
-      permissions: ['can_open_cash_register'],
-      status: 'active',
-    },
-    {
-      id: 'usr_3',
-      name: 'María Supervisora',
-      email: 'supervisor@possaas.com',
-      role: 'supervisor',
-      permissions: ['can_change_price', 'can_open_cash_register', 'can_view_profit', 'can_manage_inventory'],
-      status: 'active',
-    },
-  ]);
+  const [users, setUsers] = useState<UserData[]>(() => {
+    const saved = localStorage.getItem('pos_users');
+    return saved ? JSON.parse(saved) : INITIAL_USERS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('pos_users', JSON.stringify(users));
+  }, [users]);
 
   // Modal Crear Usuario
   const [showAddModal, setShowAddModal] = useState(false);
@@ -117,15 +126,15 @@ export const UsersManagement: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Control de Usuarios & Asignación de Permisos Granulares</h1>
-          <p className="text-slate-500 text-sm">Administra quién puede modificar precios, anular ventas o abrir la gaveta</p>
+          <h1 className="text-2xl font-bold text-slate-900">Gestión Total de Usuarios, Permisos & Eliminación</h1>
+          <p className="text-slate-500 text-sm">Crea, edita permisos, cambia roles o elimina cualquier usuario del sistema</p>
         </div>
         <button onClick={() => setShowAddModal(true)} className="btn-indigo px-4 py-2.5 flex items-center gap-2 text-xs font-bold shadow-md shadow-indigo-600/30">
           <UserPlus className="w-4 h-4" /> + Crear Nuevo Usuario
         </button>
       </div>
 
-      {/* Modal Crear Usuario con Permisos */}
+      {/* Modal Crear Usuario */}
       {showAddModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-lg space-y-4 shadow-2xl">
@@ -169,13 +178,12 @@ export const UsersManagement: React.FC = () => {
                   onChange={(e: any) => setNewRole(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none font-semibold"
                 >
-                  <option value="cashier">Cajero (Permisos Básicos de Cobro)</option>
-                  <option value="supervisor">Supervisor (Permisos Intermedios)</option>
-                  <option value="admin">Administrador (Acceso Total)</option>
+                  <option value="cashier">Cajero</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="admin">Administrador</option>
                 </select>
               </div>
 
-              {/* Asignación de Permisos Granulares */}
               <div className="space-y-2 pt-2 border-t border-slate-100">
                 <label className="font-extrabold text-slate-900 block">Asignar Permisos Específicos:</label>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
@@ -206,7 +214,7 @@ export const UsersManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Editar Permisos */}
+      {/* Modal Editar Permisos & Rol */}
       {editingUser && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-lg space-y-4 shadow-2xl">
@@ -218,6 +226,19 @@ export const UsersManagement: React.FC = () => {
             </div>
 
             <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Cambiar Rol</label>
+                <select
+                  value={editingUser.role}
+                  onChange={(e: any) => setEditingUser({ ...editingUser, role: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none font-bold"
+                >
+                  <option value="cashier">Cajero</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+
               <p className="text-slate-500 font-medium">Marca o desmarca los permisos granulares para este usuario:</p>
               <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                 {ALL_PERMISSIONS.map((perm) => {
@@ -250,7 +271,7 @@ export const UsersManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Eliminar Usuario */}
+      {/* Modal Confirmar Eliminar Usuario */}
       {deletingUser && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl text-center">
@@ -260,12 +281,12 @@ export const UsersManagement: React.FC = () => {
             <div className="space-y-1">
               <h3 className="font-extrabold text-base text-slate-900">¿Eliminar Usuario?</h3>
               <p className="text-xs text-slate-500">
-                ¿Estás seguro de eliminar a <span className="font-bold text-slate-800">{deletingUser.name}</span>? Esta acción no se puede deshacer.
+                ¿Confirmas eliminar a <span className="font-bold text-slate-800">{deletingUser.name}</span> ({deletingUser.email})? Se borrará definitivamente del sistema.
               </p>
             </div>
             <div className="flex gap-2 pt-2">
               <button onClick={() => setDeletingUser(null)} className="w-1/2 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 text-xs">Cancelar</button>
-              <button onClick={handleDeleteUser} className="w-1/2 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-md shadow-rose-600/30 hover:bg-rose-700">Eliminar</button>
+              <button onClick={handleDeleteUser} className="w-1/2 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-md shadow-rose-600/30 hover:bg-rose-700">Sí, Eliminar</button>
             </div>
           </div>
         </div>
@@ -319,19 +340,18 @@ export const UsersManagement: React.FC = () => {
                     <button
                       onClick={() => setEditingUser(u)}
                       className="px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold flex items-center gap-1 hover:bg-indigo-100 transition-colors"
-                      title="Editar Permisos Granulares"
+                      title="Editar Permisos & Rol"
                     >
                       <Edit3 className="w-3.5 h-3.5" /> Permisos
                     </button>
-                    {u.role !== 'admin' && (
-                      <button
-                        onClick={() => setDeletingUser(u)}
-                        className="p-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 transition-colors"
-                        title="Eliminar Usuario"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+
+                    <button
+                      onClick={() => setDeletingUser(u)}
+                      className="p-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 transition-colors"
+                      title="Eliminar Usuario"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </td>
               </tr>
