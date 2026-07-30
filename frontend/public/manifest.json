@@ -1,20 +1,15 @@
 {
-  "short_name": "POS SaaS",
-  "name": "Sistema POS SaaS Comercial",
+  "short_name": "VENDIX POS",
+  "name": "VENDIX POS Commercial v5.0",
   "icons": [
     {
-      "src": "icon-192.png",
-      "type": "image/png",
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
       "sizes": "192x192"
-    },
-    {
-      "src": "icon-512.png",
-      "type": "image/png",
-      "sizes": "512x512"
     }
   ],
   "start_url": ".",
   "background_color": "#0f172a",
-  "theme_color": "#0284c7",
+  "theme_color": "#6366f1",
   "display": "standalone"
 }

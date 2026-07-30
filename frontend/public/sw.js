@@ -1,20 +1,17 @@
-const CACHE_NAME = 'pos-saas-v5-cache';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json'
-];
-
+// VENDIX Service Worker - Cache-busting automático para garantizar código siempre actualizado
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+    caches.keys().then((keys) => {
+      return Promise.all(keys.map((key) => caches.delete(key)));
+    }).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
-  );
+  // Red directa a servidor para evitar caché obsoleto en navegación SPA
+  event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });
