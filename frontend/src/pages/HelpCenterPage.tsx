@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, Search, Clock, Sparkles, CheckCircle2, ChevronRight, HelpCircle, Keyboard, Headphones, Monitor, Package, Warehouse, Wallet, Receipt, Users, CreditCard, Database, Settings, Printer } from 'lucide-react';
+import { BookOpen, Search, Clock, Sparkles, CheckCircle2, ChevronRight, HelpCircle, Keyboard, Headphones, Monitor, Package, Warehouse, Wallet, Receipt, Users, CreditCard, Database, Settings, Printer, ShieldCheck } from 'lucide-react';
 
 interface Article {
   id: string;
