@@ -34,6 +34,9 @@ async def system_status(db: AsyncSession = Depends(get_db)):
     }
 
 @router.post("/register-company", response_model=TokenResponse)
+@router.post("/register-company/", response_model=TokenResponse)
+@router.post("/register", response_model=TokenResponse)
+@router.post("/register/", response_model=TokenResponse)
 async def register_company(data: CompanyRegisterRequest, db: AsyncSession = Depends(get_db)):
     if not data.terms_accepted:
         raise HTTPException(status_code=400, detail="Debe aceptar los términos y condiciones.")
@@ -125,6 +128,7 @@ async def register_company(data: CompanyRegisterRequest, db: AsyncSession = Depe
     )
 
 @router.post("/login", response_model=TokenResponse)
+@router.post("/login/", response_model=TokenResponse)
 async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(UserModel).where(UserModel.email == data.email))
     user = result.scalars().first()

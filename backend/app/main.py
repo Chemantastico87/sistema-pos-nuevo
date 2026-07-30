@@ -12,7 +12,8 @@ logger = logging.getLogger("POS_SaaS_Main")
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    openapi_url="/api/v1/openapi.json"
+    openapi_url="/api/v1/openapi.json",
+    redirect_slashes=False
 )
 
 app.add_middleware(
