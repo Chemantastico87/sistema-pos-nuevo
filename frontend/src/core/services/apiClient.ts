@@ -14,8 +14,17 @@ export const apiClient = {
       headers: getAuthHeaders(),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: 'Error de red' }));
-      throw new Error(err.detail || 'Error en la petición HTTP');
+      let errorMessage = `Error HTTP ${res.status}`;
+      try {
+        const errData = await res.json();
+        errorMessage = errData.detail || errData.message || errorMessage;
+      } catch (e) {
+        const text = await res.text().catch(() => '');
+        if (text.includes('<!DOCTYPE html>') || text.includes('<html')) {
+          errorMessage = 'El servidor devolvió una página HTML en lugar de JSON. Compruebe la ruta /api/v1.';
+        }
+      }
+      throw new Error(errorMessage);
     }
     return res.json();
   },
@@ -27,9 +36,74 @@ export const apiClient = {
       body: JSON.stringify(body),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: 'Error de red' }));
-      throw new Error(err.detail || 'Error al procesar la solicitud');
+      let errorMessage = `Error HTTP ${res.status}`;
+      try {
+        const errData = await res.json();
+        errorMessage = errData.detail || errData.message || errorMessage;
+      } catch (e) {
+        const text = await res.text().catch(() => '');
+        if (text.includes('<!DOCTYPE html>') || text.includes('<html')) {
+          errorMessage = 'El servidor de API no está respondiendo en Vercel (Reescritura HTML).';
+        }
+      }
+      throw new Error(errorMessage);
     }
     return res.json();
   },
+
+  async put<T>(endpoint: string, body: any): Promise<T> {
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      let errorMessage = `Error HTTP ${res.status}`;
+      try {
+        const errData = await res.json();
+        errorMessage = errData.detail || errData.message || errorMessage;
+      } catch (e) {
+        // fallback
+      }
+      throw new Error(errorMessage);
+    }
+    return res.json();
+  },
+
+  async patch<T>(endpoint: string, body?: any): Promise<T> {
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) {
+      let errorMessage = `Error HTTP ${res.status}`;
+      try {
+        const errData = await res.json();
+        errorMessage = errData.detail || errData.message || errorMessage;
+      } catch (e) {
+        // fallback
+      }
+      throw new Error(errorMessage);
+    }
+    return res.json();
+  },
+
+  async delete<T>(endpoint: string): Promise<T> {
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+      let errorMessage = `Error HTTP ${res.status}`;
+      try {
+        const errData = await res.json();
+        errorMessage = errData.detail || errData.message || errorMessage;
+      } catch (e) {
+        // fallback
+      }
+      throw new Error(errorMessage);
+    }
+    return res.json();
+  }
 };

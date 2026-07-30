@@ -12,9 +12,9 @@ class Settings(BaseSettings):
     
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "sqlite+aiosqlite:///./pos_saas.db" if not os.getenv("POSTGRES_DB") else "postgresql+asyncpg://pos_user:pos_password_secure@localhost:5432/pos_saas_db"
+        os.getenv("POSTGRES_URL", "sqlite+aiosqlite:////tmp/pos_saas.db" if os.getenv("VERCEL") else "sqlite+aiosqlite:///./pos_saas.db")
     )
     
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "production" if os.getenv("VERCEL") else "development")
 
 settings = Settings()

@@ -57,7 +57,7 @@ export const LoginPage: React.FC = () => {
         res.refresh_token
       );
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Error al iniciar sesión. Verifique sus credenciales.');
+      setError(err.message || 'Error al iniciar sesión. Verifique sus credenciales.');
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +109,7 @@ export const LoginPage: React.FC = () => {
         res.refresh_token
       );
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Error al registrar la empresa. Intente nuevamente.');
+      setError(err.message || 'Error al registrar la empresa. Intente nuevamente.');
     } finally {
       setIsLoading(false);
     }
