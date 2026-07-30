@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Lock, Mail, ArrowRight, Building2, User, Globe, Coins, Clock, ShieldCheck, CheckCircle2, Zap, FileText, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, Mail, ArrowRight, Building2, User, Globe, Coins, Clock, ShieldCheck, CheckCircle2, FileText, X } from 'lucide-react';
 import { useAuthStore } from '../core/store/authStore';
 import { apiClient } from '../core/services/apiClient';
 
 export const LoginPage: React.FC = () => {
   const [tab, setTab] = useState<'login' | 'register' | 'forgot' | 'verify'>('login');
+  const [hasExistingCompanies, setHasExistingCompanies] = useState<boolean | null>(null);
   
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
@@ -35,6 +36,21 @@ export const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   const setAuth = useAuthStore((s) => s.setAuth);
+
+  useEffect(() => {
+    apiClient.get('/auth/system-status')
+      .then((res: any) => {
+        setHasExistingCompanies(res.has_companies);
+        if (res.has_companies) {
+          setTab('login');
+        } else {
+          setTab('register');
+        }
+      })
+      .catch(() => {
+        setHasExistingCompanies(false);
+      });
+  }, []);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,15 +218,17 @@ export const LoginPage: React.FC = () => {
 
       <div className="w-full max-w-xl bg-slate-800/90 border border-slate-700/80 backdrop-blur-xl p-8 rounded-3xl space-y-6 shadow-2xl relative z-10">
         
-        {/* Header de Marca */}
+        {/* LOGOTIPO OFICIAL VENDIX: MONOGRAMA GEOMÉTRICO "V" (SIN RAYO) */}
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-400 via-indigo-600 to-purple-600 flex items-center justify-center mx-auto shadow-lg shadow-indigo-500/30">
-            <Zap className="w-7 h-7 text-white fill-white" />
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-600 to-emerald-500 flex items-center justify-center mx-auto shadow-lg shadow-indigo-500/30">
+            <svg className="w-8 h-8 text-white fill-current" viewBox="0 0 24 24">
+              <path d="M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1.6.8L16.5 18l-3.5 2.5a1 1 0 0 1-1.2 0L8.3 18l-2.9 2.8A1 1 0 0 1 3 20V4a1 1 0 0 1 1-1zm3 3v10.5l2-1.9a1 1 0 0 1 1.3 0l2.7 1.9 2.7-1.9a1 1 0 0 1 1.3 0l2 1.9V6H7zm2 3h6v2H9V9zm0 4h4v2H9v-2z" />
+            </svg>
           </div>
           <div>
             <div className="flex items-center justify-center gap-2">
-              <h1 className="text-2xl font-black text-white tracking-wider font-heading">
-                NEXUS POS
+              <h1 className="text-2xl font-black text-white tracking-widest font-heading">
+                VENDIX
               </h1>
               <span className="px-2 py-0.5 rounded-md bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[10px] font-black tracking-widest uppercase shadow-xs">
                 SaaS Commercial
@@ -222,31 +240,27 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Pestañas de Navegación */}
-        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-900/60 rounded-xl text-xs font-bold border border-slate-700/50">
+        {/* Pestañas de Navegación Adaptativas */}
+        <div className="grid grid-cols-3 gap-1 p-1 bg-slate-900/60 rounded-xl text-xs font-bold border border-slate-700/50">
           <button
             onClick={() => { setTab('login'); setError(null); setSuccess(null); }}
             className={`py-2 rounded-lg transition-all ${tab === 'login' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
           >
             Iniciar Sesión
           </button>
-          <button
-            onClick={() => { setTab('register'); setError(null); setSuccess(null); }}
-            className={`py-2 rounded-lg transition-all ${tab === 'register' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
-          >
-            Crear Empresa
-          </button>
+          {!hasExistingCompanies && (
+            <button
+              onClick={() => { setTab('register'); setError(null); setSuccess(null); }}
+              className={`py-2 rounded-lg transition-all ${tab === 'register' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+            >
+              Crear Empresa
+            </button>
+          )}
           <button
             onClick={() => { setTab('forgot'); setError(null); setSuccess(null); }}
             className={`py-2 rounded-lg transition-all ${tab === 'forgot' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
           >
             Recuperar
-          </button>
-          <button
-            onClick={() => { setTab('verify'); setError(null); setSuccess(null); }}
-            className={`py-2 rounded-lg transition-all ${tab === 'verify' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
-          >
-            Verificar
           </button>
         </div>
 
@@ -303,9 +317,9 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>{isLoading ? 'Iniciando Sesión...' : 'Acceder a mi TPV'}</span>
+              <span>{isLoading ? 'Iniciando Sesión...' : 'Acceder a VENDIX POS'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -451,7 +465,7 @@ export const LoginPage: React.FC = () => {
 
             {/* SELECCIÓN DE PLAN DE PAGO */}
             <div>
-              <label className="text-xs font-bold text-slate-300 block mb-1">9. Plan de Suscripción Inicial (14 Días Gratis)</label>
+              <label className="text-xs font-bold text-slate-300 block mb-1">9. Plan VENDIX Inicial (14 Días Gratis)</label>
               <div className="grid grid-cols-4 gap-1.5">
                 {[
                   { name: 'Starter', price: '€19/m' },
@@ -463,7 +477,7 @@ export const LoginPage: React.FC = () => {
                     type="button"
                     key={p.name}
                     onClick={() => setSelectedPlan(p.name)}
-                    className={`p-2 rounded-xl border text-center transition-all ${
+                    className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
                       selectedPlan === p.name
                         ? 'bg-indigo-600/30 border-indigo-500 text-white font-bold'
                         : 'bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-500'
@@ -492,7 +506,7 @@ export const LoginPage: React.FC = () => {
                   onClick={() => setShowTermsModal(true)}
                   className="text-indigo-400 font-bold underline hover:text-indigo-300"
                 >
-                  Términos de Servicio y la Política de Privacidad
+                  Términos de Servicio VENDIX
                 </button>
               </label>
             </div>
@@ -500,9 +514,9 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 mt-2"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer"
             >
-              <span>{isLoading ? 'Registrando...' : 'Crear Mi Empresa POS SaaS'}</span>
+              <span>{isLoading ? 'Registrando...' : 'Crear Mi Empresa VENDIX POS'}</span>
               <ShieldCheck className="w-4 h-4" />
             </button>
           </form>
@@ -512,7 +526,7 @@ export const LoginPage: React.FC = () => {
         {tab === 'forgot' && (
           <form onSubmit={handleForgotSubmit} className="space-y-4">
             <p className="text-xs text-slate-400">
-              Ingrese el correo electrónico con el que registró su empresa para recibir las instrucciones de restablecimiento de contraseña.
+              Ingrese el correo electrónico con el que registró su empresa para recibir las instrucciones de recuperación.
             </p>
             <div>
               <label className="text-xs font-bold text-slate-300 block mb-1.5">
@@ -534,56 +548,32 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm shadow-lg transition-all"
+              className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm shadow-lg transition-all cursor-pointer"
             >
               {isLoading ? 'Enviando...' : 'Enviar Enlace de Recuperación'}
             </button>
           </form>
         )}
-
-        {/* TAB 4: VERIFICAR CORREO */}
-        {tab === 'verify' && (
-          <div className="text-center space-y-4 py-2">
-            <div className="w-12 h-12 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl flex items-center justify-center mx-auto text-indigo-400">
-              <Mail className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-white">Verificación de Correo Electrónico</h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Todas las cuentas comerciales recién creadas reciben un correo de validación automática para confirmar su empresa.
-              </p>
-            </div>
-            <button
-              onClick={() => setTab('login')}
-              className="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition-all"
-            >
-              Volver al inicio de sesión
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* MODAL LECTURA DE TÉRMINOS Y CONDICIONES */}
+      {/* MODAL LECTURA DE TÉRMINOS Y CONDICIONES VENDIX */}
       {showTermsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
           <div className="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-3xl p-6 space-y-4 max-h-[85vh] overflow-y-auto font-sans">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-indigo-400" />
-                <h3 className="text-base font-bold text-white">Términos de Servicio & Política de Privacidad</h3>
+                <h3 className="text-base font-bold text-white">Términos de Servicio VENDIX Commercial</h3>
               </div>
-              <button
-                onClick={() => setShowTermsModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg"
-              >
+              <button onClick={() => setShowTermsModal(false)} className="text-slate-400 hover:text-white p-1 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs text-slate-300 leading-relaxed">
-              <h4 className="font-bold text-white text-sm">1. Condición del Servicio POS SaaS</h4>
+              <h4 className="font-bold text-white text-sm">1. Condición del Servicio VENDIX</h4>
               <p>
-                Al registrar su empresa en NEXUS POS Commercial v5.0, usted obtiene una licencia multi-tenant de uso operativo para la gestión de ventas TPV, control de inventario y facturación comercial.
+                Al registrar su empresa en VENDIX Commercial v5.0, usted obtiene una licencia operativa para la gestión de ventas TPV, control de inventario y facturación comercial.
               </p>
 
               <h4 className="font-bold text-white text-sm">2. Planes y Período de Prueba</h4>
@@ -600,7 +590,7 @@ export const LoginPage: React.FC = () => {
             <div className="pt-2 border-t border-slate-800 flex justify-end">
               <button
                 onClick={() => { setTermsAccepted(true); setShowTermsModal(false); }}
-                className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2"
+                className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Entendido y Aceptar Términos</span>
@@ -610,7 +600,7 @@ export const LoginPage: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL NOTIFICACIÓN DE ENVÍO DE CORREO DE VERIFICACIÓN */}
+      {/* MODAL NOTIFICACIÓN DE VERIFICACIÓN VENDIX */}
       {showVerifyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
           <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
@@ -619,7 +609,7 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="text-base font-bold text-white">¡Empresa Registrada Exitosamente!</h3>
+              <h3 className="text-base font-bold text-white">¡Empresa Registrada en VENDIX!</h3>
               <p className="text-xs text-slate-300 mt-2 leading-relaxed">
                 Hemos enviado un correo electrónico de verificación a{' '}
                 <span className="font-bold text-emerald-400 font-mono">{registerEmail || 'su correo corporativo'}</span>{' '}

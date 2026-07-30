@@ -15,6 +15,9 @@ from app.domains.backups.router import router as backups_router
 from app.domains.activity.router import router as activity_router
 from app.domains.notifications.router import router as notifications_router
 from app.domains.import_export.router import router as import_export_router
+from app.domains.plans.router import router as plans_router
+from app.domains.coupons.router import router as coupons_router
+from app.domains.vendix_ai.router import router as vendix_ai_router
 
 api_v1_router = APIRouter(prefix="/api/v1")
 
@@ -34,3 +37,6 @@ api_v1_router.include_router(backups_router)
 api_v1_router.include_router(activity_router)
 api_v1_router.include_router(notifications_router)
 api_v1_router.include_router(import_export_router)
+api_v1_router.include_router(plans_router)
+api_v1_router.include_router(coupons_router)
+api_v1_router.include_router(vendix_ai_router)

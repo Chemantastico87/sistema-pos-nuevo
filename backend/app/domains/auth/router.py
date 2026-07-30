@@ -23,6 +23,16 @@ ALL_ADMIN_PERMISSIONS = [
     "can_manage_subscriptions", "can_access_api"
 ]
 
+@router.get("/system-status")
+async def system_status(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(CompanyModel))
+    has_companies = len(result.scalars().all()) > 0
+    return {
+        "has_companies": has_companies,
+        "app_name": "VENDIX",
+        "version": "5.0.0"
+    }
+
 @router.post("/register-company", response_model=TokenResponse)
 async def register_company(data: CompanyRegisterRequest, db: AsyncSession = Depends(get_db)):
     if not data.terms_accepted:
