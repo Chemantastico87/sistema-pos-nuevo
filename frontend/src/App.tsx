@@ -31,7 +31,8 @@ export const App: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const [showWizard, setShowWizard] = useState(true);
 
-  if (!token) {
+  // Si no hay token o usuario válido, renderizar siempre la pantalla de Iniciar Sesión / Registro
+  if (!token || !user) {
     return <LoginPage />;
   }
 

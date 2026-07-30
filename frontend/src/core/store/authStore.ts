@@ -22,31 +22,50 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: JSON.parse(localStorage.getItem('pos_user_data') || 'null'),
-  token: localStorage.getItem('access_token'),
-  refreshToken: localStorage.getItem('refresh_token'),
-  setAuth: (user, token, refreshToken) => {
-    localStorage.setItem('access_token', token);
-    localStorage.setItem('pos_user_data', JSON.stringify(user));
-    if (refreshToken) {
-      localStorage.setItem('refresh_token', refreshToken);
+const safeParseUser = (): User | null => {
+  try {
+    const data = localStorage.getItem('pos_user_data');
+    if (!data) return null;
+    const parsed = JSON.parse(data);
+    if (parsed && parsed.id && parsed.company_id) {
+      return parsed;
     }
-    set({ user, token, refreshToken });
-  },
-  setOnboardingCompleted: (completed) => {
-    set((state) => {
-      if (!state.user) return state;
-      const updatedUser = { ...state.user, onboarding_completed: completed };
-      localStorage.setItem('pos_user_data', JSON.stringify(updatedUser));
-      return { user: updatedUser };
-    });
-  },
-  logout: () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('pos_user_data');
-    sessionStorage.clear();
-    set({ user: null, token: null, refreshToken: null });
-  },
-}));
+    return null;
+  } catch (e) {
+    return null;
+  }
+};
+
+export const useAuthStore = create<AuthState>((set) => {
+  const initialUser = safeParseUser();
+  const initialToken = initialUser ? localStorage.getItem('access_token') : null;
+
+  return {
+    user: initialUser,
+    token: initialToken,
+    refreshToken: localStorage.getItem('refresh_token'),
+    setAuth: (user, token, refreshToken) => {
+      localStorage.setItem('access_token', token);
+      localStorage.setItem('pos_user_data', JSON.stringify(user));
+      if (refreshToken) {
+        localStorage.setItem('refresh_token', refreshToken);
+      }
+      set({ user, token, refreshToken });
+    },
+    setOnboardingCompleted: (completed) => {
+      set((state) => {
+        if (!state.user) return state;
+        const updatedUser = { ...state.user, onboarding_completed: completed };
+        localStorage.setItem('pos_user_data', JSON.stringify(updatedUser));
+        return { user: updatedUser };
+      });
+    },
+    logout: () => {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('pos_user_data');
+      sessionStorage.clear();
+      set({ user: null, token: null, refreshToken: null });
+    },
+  };
+});

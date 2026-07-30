@@ -216,27 +216,31 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Pestañas de Navegación Adaptativas */}
-        <div className="grid grid-cols-3 gap-1 p-1 bg-slate-900/60 rounded-xl text-xs font-bold border border-slate-700/50">
+        {/* Pestañas de Navegación */}
+        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-900/60 rounded-xl text-xs font-bold border border-slate-700/50">
           <button
             onClick={() => { setTab('login'); setError(null); setSuccess(null); }}
             className={`py-2 rounded-lg transition-all ${tab === 'login' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
           >
             Iniciar Sesión
           </button>
-          {!hasExistingCompanies && (
-            <button
-              onClick={() => { setTab('register'); setError(null); setSuccess(null); }}
-              className={`py-2 rounded-lg transition-all ${tab === 'register' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
-            >
-              Crear Empresa
-            </button>
-          )}
+          <button
+            onClick={() => { setTab('register'); setError(null); setSuccess(null); }}
+            className={`py-2 rounded-lg transition-all ${tab === 'register' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+          >
+            Crear Empresa
+          </button>
           <button
             onClick={() => { setTab('forgot'); setError(null); setSuccess(null); }}
             className={`py-2 rounded-lg transition-all ${tab === 'forgot' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
           >
             Recuperar
+          </button>
+          <button
+            onClick={() => { setTab('verify'); setError(null); setSuccess(null); }}
+            className={`py-2 rounded-lg transition-all ${tab === 'verify' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+          >
+            Verificar
           </button>
         </div>
 
