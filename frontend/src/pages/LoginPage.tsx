@@ -1,22 +1,46 @@
 import React, { useState } from 'react';
-import { Lock, Mail, ArrowRight, CheckCircle2, Zap } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Building2, User, Globe, Coins, Clock, ShieldCheck, CheckCircle2, Zap } from 'lucide-react';
 import { useAuthStore } from '../core/store/authStore';
 import { apiClient } from '../core/services/apiClient';
 
 export const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('admin@possaas.com');
-  const [password, setPassword] = useState('admin123');
+  const [tab, setTab] = useState<'login' | 'register' | 'forgot' | 'verify'>('login');
+  
+  // Login state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  
+  // Register state (9 campos)
+  const [companyName, setCompanyName] = useState('');
+  const [ownerName, setOwnerName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [country, setCountry] = useState('España');
+  const [currency, setCurrency] = useState('EUR');
+  const [timezone, setTimezone] = useState('Europe/Madrid');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // Forgot state
+  const [forgotEmail, setForgotEmail] = useState('');
+
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
-      const res: any = await apiClient.post('/auth/login', { email, password });
+      const res: any = await apiClient.post('/auth/login', {
+        email: loginEmail,
+        password: loginPassword,
+      });
+
       setAuth(
         {
           id: res.user_id,
@@ -24,112 +48,420 @@ export const LoginPage: React.FC = () => {
           full_name: res.full_name,
           role: res.role,
           permissions: res.permissions || [],
+          onboarding_completed: res.onboarding_completed,
+          currency: res.currency,
+          plan: res.plan,
+          subscription_status: res.subscription_status,
         },
-        res.access_token
+        res.access_token,
+        res.refresh_token
       );
     } catch (err: any) {
+      setError(err.response?.data?.detail || 'Error al iniciar sesión. Verifique sus credenciales.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    if (registerPassword !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!termsAccepted) {
+      setError('Debe aceptar los términos y condiciones para continuar.');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const res: any = await apiClient.post('/auth/register-company', {
+        company_name: companyName,
+        owner_name: ownerName,
+        email: registerEmail,
+        password: registerPassword,
+        confirm_password: confirmPassword,
+        country,
+        currency,
+        timezone,
+        terms_accepted: termsAccepted,
+      });
+
       setAuth(
         {
-          id: 'usr_admin_99999',
-          company_id: 'comp_demo_12345',
-          full_name: 'Admin Administrador',
-          role: 'admin',
-          permissions: [
-            'can_change_price',
-            'can_delete_sale',
-            'can_open_cash_register',
-            'can_view_profit',
-            'can_manage_inventory',
-            'can_manage_users',
-          ],
+          id: res.user_id,
+          company_id: res.company_id,
+          full_name: res.full_name,
+          role: res.role,
+          permissions: res.permissions || [],
+          onboarding_completed: false,
+          currency: res.currency,
+          plan: res.plan,
+          subscription_status: res.subscription_status,
         },
-        'demo_token_v5'
+        res.access_token,
+        res.refresh_token
       );
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Error al registrar la empresa. Intente nuevamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await apiClient.post('/auth/forgot-password', { email: forgotEmail });
+      setSuccess('Si el correo electrónico existe en nuestra plataforma, hemos enviado las instrucciones de recuperación.');
+    } catch (err: any) {
+      setError('Error al procesar la solicitud.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-100 relative overflow-hidden">
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-900 text-slate-100 relative overflow-hidden font-sans">
+      {/* Luces de fondo estilo premium glassmorphism */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md bg-white border border-slate-200 p-8 rounded-3xl space-y-6 shadow-xl relative z-10">
-        <div className="text-center space-y-3">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-400 via-indigo-600 to-purple-600 flex items-center justify-center mx-auto shadow-lg shadow-indigo-600/30">
-            <Zap className="w-8 h-8 text-white fill-white" />
+      <div className="w-full max-w-xl bg-slate-800/90 border border-slate-700/80 backdrop-blur-xl p-8 rounded-3xl space-y-6 shadow-2xl relative z-10">
+        
+        {/* Header de Marca */}
+        <div className="text-center space-y-2">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-400 via-indigo-600 to-purple-600 flex items-center justify-center mx-auto shadow-lg shadow-indigo-500/30">
+            <Zap className="w-7 h-7 text-white fill-white" />
           </div>
           <div>
-            <div className="flex items-center justify-center gap-1.5">
-              <h1 className="text-2xl font-black text-slate-900 tracking-wider font-heading">
+            <div className="flex items-center justify-center gap-2">
+              <h1 className="text-2xl font-black text-white tracking-wider font-heading">
                 NEXUS POS
               </h1>
-              <span className="px-2 py-0.5 rounded-md bg-gradient-to-r from-cyan-500 to-indigo-600 text-white text-[10px] font-black tracking-widest uppercase shadow-xs">
-                PRO
+              <span className="px-2 py-0.5 rounded-md bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[10px] font-black tracking-widest uppercase shadow-xs">
+                SaaS Commercial
               </span>
             </div>
-            <p className="text-xs text-slate-500 font-medium mt-1">
-              Plataforma Comercial Multi-Tenant v5.0
+            <p className="text-xs text-slate-400 font-medium mt-1">
+              Plataforma TPV & Gestión Comercial Multi-Tenant v5.0
             </p>
           </div>
         </div>
 
+        {/* Pestañas de Navegación */}
+        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-900/60 rounded-xl text-xs font-bold border border-slate-700/50">
+          <button
+            onClick={() => { setTab('login'); setError(null); setSuccess(null); }}
+            className={`py-2 rounded-lg transition-all ${tab === 'login' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+          >
+            Iniciar Sesión
+          </button>
+          <button
+            onClick={() => { setTab('register'); setError(null); setSuccess(null); }}
+            className={`py-2 rounded-lg transition-all ${tab === 'register' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+          >
+            Crear Empresa
+          </button>
+          <button
+            onClick={() => { setTab('forgot'); setError(null); setSuccess(null); }}
+            className={`py-2 rounded-lg transition-all ${tab === 'forgot' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+          >
+            Recuperar
+          </button>
+          <button
+            onClick={() => { setTab('verify'); setError(null); setSuccess(null); }}
+            className={`py-2 rounded-lg transition-all ${tab === 'verify' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+          >
+            Verificar
+          </button>
+        </div>
+
         {error && (
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1.5">
-              Correo Electrónico
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@possaas.com"
-                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 outline-none transition-all"
-              />
+        {success && (
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{success}</span>
+          </div>
+        )}
+
+        {/* TAB 1: INICIAR SESIÓN */}
+        {tab === 'login' && (
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                Correo Electrónico
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                <input
+                  type="email"
+                  required
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="usuario@suempresa.com"
+                  className="w-full bg-slate-900/80 border border-slate-700 focus:border-indigo-500 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white outline-none transition-all"
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1.5">
-              Contraseña
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 outline-none transition-all"
-              />
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                Contraseña
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                <input
+                  type="password"
+                  required
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-slate-900/80 border border-slate-700 focus:border-indigo-500 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white outline-none transition-all"
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-800 text-xs font-medium flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
-            <span>Credenciales demo precargadas. Haz clic para ingresar.</span>
-          </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2"
+            >
+              <span>{isLoading ? 'Iniciando Sesión...' : 'Acceder a mi TPV'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
+        )}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2"
-          >
-            <span>{isLoading ? 'Iniciando Sesión...' : 'Iniciar Sesión'}</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </form>
+        {/* TAB 2: CREAR EMPRESA (REGISTRO SAAS CON 9 CAMPOS) */}
+        {tab === 'register' && (
+          <form onSubmit={handleRegisterSubmit} className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">1. Nombre Empresa</label>
+                <div className="relative">
+                  <Building2 className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                  <input
+                    type="text"
+                    required
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Mi Negocio S.L."
+                    className="w-full bg-slate-900/80 border border-slate-700 focus:border-indigo-500 rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">2. Nombre Propietario</label>
+                <div className="relative">
+                  <User className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                  <input
+                    type="text"
+                    required
+                    value={ownerName}
+                    onChange={(e) => setOwnerName(e.target.value)}
+                    placeholder="Juan Pérez"
+                    className="w-full bg-slate-900/80 border border-slate-700 focus:border-indigo-500 rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-1">3. Email Corporativo</label>
+              <div className="relative">
+                <Mail className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="email"
+                  required
+                  value={registerEmail}
+                  onChange={(e) => setRegisterEmail(e.target.value)}
+                  placeholder="admin@minegocio.com"
+                  className="w-full bg-slate-900/80 border border-slate-700 focus:border-indigo-500 rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">4. Contraseña</label>
+                <div className="relative">
+                  <Lock className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                  <input
+                    type="password"
+                    required
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-slate-900/80 border border-slate-700 focus:border-indigo-500 rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">5. Confirmar Contraseña</label>
+                <div className="relative">
+                  <Lock className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-slate-900/80 border border-slate-700 focus:border-indigo-500 rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">6. País</label>
+                <div className="relative">
+                  <Globe className="w-3 h-3 absolute left-2.5 top-2.5 text-slate-400" />
+                  <select
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className="w-full bg-slate-900/80 border border-slate-700 focus:border-indigo-500 rounded-xl pl-7 pr-2 py-1.5 text-xs text-white outline-none"
+                  >
+                    <option value="España">España</option>
+                    <option value="México">México</option>
+                    <option value="Colombia">Colombia</option>
+                    <option value="Argentina">Argentina</option>
+                    <option value="Chile">Chile</option>
+                    <option value="Estados Unidos">Estados Unidos</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">7. Moneda</label>
+                <div className="relative">
+                  <Coins className="w-3 h-3 absolute left-2.5 top-2.5 text-slate-400" />
+                  <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="w-full bg-slate-900/80 border border-slate-700 focus:border-indigo-500 rounded-xl pl-7 pr-2 py-1.5 text-xs text-white outline-none"
+                  >
+                    <option value="EUR">EUR (€)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="MXN">MXN ($)</option>
+                    <option value="COP">COP ($)</option>
+                    <option value="CLP">CLP ($)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">8. Zona Horaria</label>
+                <div className="relative">
+                  <Clock className="w-3 h-3 absolute left-2.5 top-2.5 text-slate-400" />
+                  <select
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                    className="w-full bg-slate-900/80 border border-slate-700 focus:border-indigo-500 rounded-xl pl-7 pr-2 py-1.5 text-xs text-white outline-none"
+                  >
+                    <option value="Europe/Madrid">Europe/Madrid</option>
+                    <option value="America/Mexico_City">America/Mexico_City</option>
+                    <option value="America/Bogota">America/Bogota</option>
+                    <option value="America/Buenos_Aires">America/Buenos_Aires</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-1">
+              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900 w-4 h-4"
+                />
+                <span>9. Acepto los Términos de Servicio y la Política de Privacidad Comercial</span>
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 mt-2"
+            >
+              <span>{isLoading ? 'Registrando...' : 'Crear Mi Empresa POS SaaS'}</span>
+              <ShieldCheck className="w-4 h-4" />
+            </button>
+          </form>
+        )}
+
+        {/* TAB 3: RECUPERAR CONTRASEÑA */}
+        {tab === 'forgot' && (
+          <form onSubmit={handleForgotSubmit} className="space-y-4">
+            <p className="text-xs text-slate-400">
+              Ingrese el correo electrónico con el que registró su empresa para recibir las instrucciones de restablecimiento de contraseña.
+            </p>
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                Correo Electrónico
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                <input
+                  type="email"
+                  required
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="admin@minegocio.com"
+                  className="w-full bg-slate-900/80 border border-slate-700 focus:border-indigo-500 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm shadow-lg transition-all"
+            >
+              {isLoading ? 'Enviando...' : 'Enviar Enlace de Recuperación'}
+            </button>
+          </form>
+        )}
+
+        {/* TAB 4: VERIFICAR CORREO */}
+        {tab === 'verify' && (
+          <div className="text-center space-y-4 py-2">
+            <div className="w-12 h-12 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl flex items-center justify-center mx-auto text-indigo-400">
+              <Mail className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white">Verificación de Correo Electrónico</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Todas las cuentas comerciales recién creadas reciben un correo de validación automática para confirmar su empresa.
+              </p>
+            </div>
+            <button
+              onClick={() => setTab('login')}
+              className="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition-all"
+            >
+              Volver al inicio de sesión
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

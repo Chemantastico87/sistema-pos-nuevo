@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Numeric, ForeignKey, DateTime
+from sqlalchemy import Column, String, Numeric, ForeignKey, DateTime, Text
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -13,6 +13,10 @@ class CashRegisterModel(Base):
     closing_balance = Column(Numeric(12, 2))
     expected_balance = Column(Numeric(12, 2))
     difference = Column(Numeric(12, 2))
+    opened_at = Column(DateTime, default=func.now())
+    closed_at = Column(DateTime)
+    closing_notes = Column(Text)
+    signed_by = Column(String(255))
 
 class CashMovementModel(Base):
     __tablename__ = "cash_movements"
@@ -20,6 +24,7 @@ class CashMovementModel(Base):
     company_id = Column(String(36), ForeignKey("companies.id"), nullable=False)
     cash_register_id = Column(String(36), ForeignKey("cash_registers.id"), nullable=False)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
-    type = Column(String(20), nullable=False)
+    type = Column(String(20), nullable=False) # sale, deposit, withdrawal, return
     amount = Column(Numeric(12, 2), nullable=False)
     reason = Column(String)
+    created_at = Column(DateTime, default=func.now())

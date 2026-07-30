@@ -1,29 +1,51 @@
 import { create } from 'zustand';
 
-interface User {
+export interface User {
   id: string;
   company_id: string;
+  company_name?: string;
   full_name: string;
   role: string;
   permissions: string[];
+  onboarding_completed?: bool;
+  currency?: string;
+  plan?: string;
+  subscription_status?: string;
 }
 
 interface AuthState {
   user: User | null;
   token: string | null;
-  setAuth: (user: User, token: string) => void;
+  refreshToken: string | null;
+  setAuth: (user: User, token: string, refreshToken?: string) => void;
+  setOnboardingCompleted: (completed: boolean) => void;
   logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
+  user: JSON.parse(localStorage.getItem('pos_user_data') || 'null'),
   token: localStorage.getItem('access_token'),
-  setAuth: (user, token) => {
+  refreshToken: localStorage.getItem('refresh_token'),
+  setAuth: (user, token, refreshToken) => {
     localStorage.setItem('access_token', token);
-    set({ user, token });
+    localStorage.setItem('pos_user_data', JSON.stringify(user));
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken);
+    }
+    set({ user, token, refreshToken });
+  },
+  setOnboardingCompleted: (completed) => {
+    set((state) => {
+      if (!state.user) return state;
+      const updatedUser = { ...state.user, onboarding_completed: completed };
+      localStorage.setItem('pos_user_data', JSON.stringify(updatedUser));
+      return { user: updatedUser };
+    });
   },
   logout: () => {
     localStorage.removeItem('access_token');
-    set({ user: null, token: null });
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('pos_user_data');
+    set({ user: null, token: null, refreshToken: null });
   },
 }));

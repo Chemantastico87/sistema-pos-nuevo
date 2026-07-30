@@ -1,9 +1,11 @@
 import time
 import uuid
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import desc
+
 from app.core.database import get_db
 from app.core.tenant import TenantContext, get_current_tenant
 from app.core.events import event_bus
@@ -12,6 +14,39 @@ from app.domains.pos.models import SaleModel, SaleItemModel
 from app.domains.pos.schemas import CheckoutRequest, SaleResponse, SyncBatchRequest
 
 router = APIRouter(prefix="/pos", tags=["POS Checkout"])
+
+@router.get("/sales", response_model=List[SaleResponse])
+async def list_sales(
+    limit: int = 100,
+    tenant: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
+    query = select(SaleModel).where(
+        SaleModel.company_id == tenant.company_id
+    ).order_by(desc(SaleModel.created_at)).limit(limit)
+    result = await db.execute(query)
+    return result.scalars().all()
+
+@router.get("/sales/{sale_id}")
+async def get_sale_detail(
+    sale_id: str,
+    tenant: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
+    sale_res = await db.execute(
+        select(SaleModel).where(SaleModel.id == sale_id, SaleModel.company_id == tenant.company_id)
+    )
+    sale = sale_res.scalars().first()
+    if not sale:
+        raise HTTPException(status_code=404, detail="Venta no encontrada")
+
+    items_res = await db.execute(select(SaleItemModel).where(SaleItemModel.sale_id == sale.id))
+    items = items_res.scalars().all()
+
+    return {
+        "sale": sale,
+        "items": items
+    }
 
 @router.post("/checkout", response_model=SaleResponse)
 async def checkout(
@@ -26,17 +61,15 @@ async def checkout(
     
     sale_id = data.offline_sale_id or f"sale_{uuid.uuid4().hex[:12]}"
     
-    # Verificar idempotencia si es venta offline
     if data.offline_sale_id:
         existing = await db.execute(select(SaleModel).where(SaleModel.id == sale_id, SaleModel.company_id == tenant.company_id))
-        if existing.scalars().first():
-            # Retornar idempotente
-            sale = existing.scalars().first()
-            return sale
+        sale_obj = existing.scalars().first()
+        if sale_obj:
+            return sale_obj
 
     subtotal = sum(item.quantity * item.unit_price for item in data.items)
     total = max(0.0, subtotal - data.discount)
-    invoice_number = f"INV-{int(time.time() * 1000) % 10000000:07d}"
+    invoice_number = f"FAC-{int(time.time() * 1000) % 10000000:07d}"
 
     sale = SaleModel(
         id=sale_id,
@@ -47,10 +80,12 @@ async def checkout(
         cash_register_id=data.cash_register_id,
         subtotal=subtotal,
         discount=data.discount,
-        tax=0.0,
+        tax=subtotal * 0.21, # 21% IVA por defecto
         total=total,
         payment_method=data.payment_method,
-        status="completed"
+        status="completed",
+        change_given=data.change_given,
+        notes=data.notes
     )
     db.add(sale)
 

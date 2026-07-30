@@ -2,26 +2,38 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   Home, Monitor, Package, Users, Warehouse, 
-  Wallet, BarChart3, Receipt, UserCheck, Settings, Grid, ChevronDown, Zap, Sparkles
+  Wallet, BarChart3, Receipt, UserCheck, Settings, Grid, ChevronDown, Zap,
+  ShieldCheck, CreditCard, Database, Activity, HelpCircle, AlertOctagon
 } from 'lucide-react';
-
-const navItems = [
-  { to: '/dashboard', label: 'Inicio', icon: Home },
-  { to: '/', label: 'POS', icon: Monitor },
-  { to: '/products', label: 'Productos', icon: Package },
-  { to: '/customers', label: 'Clientes', icon: Users },
-  { to: '/inventory', label: 'Inventario', icon: Warehouse },
-  { to: '/cash', label: 'Caja', icon: Wallet },
-  { to: '/audit', label: 'Reportes', icon: BarChart3 },
-  { to: '/tickets', label: 'Tickets', icon: Receipt },
-  { to: '/users', label: 'Usuarios & Poder', icon: UserCheck },
-  { to: '/settings', label: 'Configuración', icon: Settings },
-  { to: '/plugins', label: 'Apps & Plugins', icon: Grid },
-];
+import { useAuthStore } from '../../core/store/authStore';
 
 export const Sidebar: React.FC = () => {
+  const user = useAuthStore((s) => s.user);
+
+  const navItems = [
+    { to: '/dashboard', label: 'Inicio', icon: Home },
+    { to: '/', label: 'POS TPV', icon: Monitor },
+    { to: '/products', label: 'Productos', icon: Package },
+    { to: '/customers', label: 'Clientes', icon: Users },
+    { to: '/inventory', label: 'Inventario', icon: Warehouse },
+    { to: '/cash', label: 'Caja & Cierre', icon: Wallet },
+    { to: '/reports', label: 'Reportes', icon: BarChart3 },
+    { to: '/tickets', label: 'Tickets', icon: Receipt },
+    { to: '/users', label: 'Usuarios', icon: UserCheck },
+    { to: '/subscriptions', label: 'Suscripción', icon: CreditCard },
+    { to: '/backups', label: 'Backups', icon: Database },
+    { to: '/health', label: 'Salud Sistema', icon: Activity },
+    { to: '/error-logs', label: 'Visor Errores', icon: AlertOctagon },
+    { to: '/help', label: 'Ayuda & FAQ', icon: HelpCircle },
+    { to: '/settings', label: 'Configuración', icon: Settings },
+  ];
+
+  if (user?.role === 'admin' || user?.role === 'superadmin') {
+    navItems.unshift({ to: '/superadmin', label: 'SuperAdmin SaaS', icon: ShieldCheck });
+  }
+
   return (
-    <aside className="w-64 bg-slate-950 text-slate-300 flex flex-col justify-between p-4 shadow-2xl z-20 shrink-0 select-none border-r border-slate-800/80">
+    <aside className="w-64 bg-slate-950 text-slate-300 flex flex-col justify-between p-4 shadow-2xl z-20 shrink-0 select-none border-r border-slate-800/80 font-sans">
       <div className="space-y-6">
         {/* Logo Original & Llamativo */}
         <div className="space-y-3 px-1">
@@ -34,17 +46,17 @@ export const Sidebar: React.FC = () => {
             <div>
               <div className="flex items-center gap-1.5">
                 <h1 className="font-black text-lg text-white tracking-wider font-heading">NEXUS POS</h1>
-                <span className="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-cyan-500 to-indigo-600 text-white text-[9px] font-black tracking-widest uppercase shadow-xs">
-                  PRO
+                <span className="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[9px] font-black tracking-widest uppercase shadow-xs">
+                  SAAS
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 font-semibold tracking-wide">Enterprise SaaS v5.0</p>
+              <p className="text-[10px] text-slate-400 font-semibold tracking-wide">Commercial v5.0</p>
             </div>
           </div>
 
-          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between text-xs font-medium text-slate-300 hover:bg-slate-800/80 transition-colors cursor-pointer">
-            <span className="font-bold text-slate-200">Mi Empresa S.A.S</span>
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between text-xs font-medium text-slate-300">
+            <span className="font-bold text-slate-200 truncate">{user?.company_name || 'Mi Empresa SaaS'}</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-600/30 text-indigo-400 font-bold uppercase">{user?.plan || 'Starter'}</span>
           </div>
         </div>
 
@@ -57,7 +69,7 @@ export const Sidebar: React.FC = () => {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  `flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
                     isActive
                       ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/35 border border-indigo-400/30'
                       : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900/80'
@@ -73,21 +85,16 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Bottom Footer & Online Status */}
-      <div className="space-y-4 pt-4 border-t border-slate-900">
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 flex items-center justify-between">
+      <div className="space-y-3 pt-3 border-t border-slate-900">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Sincronización</p>
-            <p className="text-xs font-extrabold text-emerald-400">En línea (Cloud API)</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Servicio SaaS</p>
+            <p className="text-xs font-extrabold text-emerald-400">Operacional (Cloud)</p>
           </div>
           <div className="relative flex items-center justify-center">
-            <div className="w-4 h-4 rounded-full border-2 border-emerald-400 animate-ping absolute" />
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-emerald-400 animate-ping absolute" />
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400" />
           </div>
-        </div>
-
-        <div className="text-[11px] text-slate-500 text-center space-y-0.5">
-          <p className="font-extrabold text-slate-400">NEXUS POS v5.0 PRO</p>
-          <p>© 2026 Todos los derechos reservados</p>
         </div>
       </div>
     </aside>

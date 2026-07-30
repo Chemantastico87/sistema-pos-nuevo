@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Numeric, ForeignKey, DateTime
+from sqlalchemy import Column, String, Numeric, ForeignKey, DateTime, Text
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -14,8 +14,11 @@ class SaleModel(Base):
     discount = Column(Numeric(12, 2), default=0.00)
     tax = Column(Numeric(12, 2), default=0.00)
     total = Column(Numeric(12, 2), nullable=False)
-    payment_method = Column(String(50), nullable=False, default="cash")
+    payment_method = Column(String(50), nullable=False, default="cash") # cash, card, bizum, transfer, voucher, mixed
     status = Column(String(20), default="completed")
+    notes = Column(Text)
+    change_given = Column(Numeric(12, 2), default=0.00)
+    created_at = Column(DateTime, default=func.now())
 
 class SaleItemModel(Base):
     __tablename__ = "sale_items"
