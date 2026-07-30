@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   Home, Monitor, Package, Users, Warehouse, 
-  Wallet, BarChart3, Receipt, UserCheck, Settings, Grid, ChevronDown,
+  Wallet, BarChart3, Receipt, UserCheck, Settings, BookOpen, Bot,
   ShieldCheck, CreditCard, Database, Activity, HelpCircle, AlertOctagon, Sparkles
 } from 'lucide-react';
 import { useAuthStore } from '../../core/store/authStore';
@@ -22,8 +22,9 @@ export const Sidebar: React.FC = () => {
     { to: '/users', label: 'Usuarios', icon: UserCheck },
     { to: '/subscriptions', label: 'Suscripción', icon: CreditCard },
     { to: '/backups', label: 'Backups Enterprise', icon: Database },
-    { to: '/health', label: 'Salud Sistema', icon: Activity },
-    { to: '/error-logs', label: 'Visor Errores', icon: AlertOctagon },
+    { to: '/help-center', label: 'Centro de Ayuda', icon: BookOpen },
+    { to: '/vendix-assistant', label: 'Asistente VENDIX AI', icon: Bot },
+    { to: '/diagnostics', label: 'Diagnóstico Sistema', icon: Activity },
     { to: '/help', label: 'Soporte & Roadmap', icon: HelpCircle },
     { to: '/settings', label: 'Configuración', icon: Settings },
   ];
@@ -40,7 +41,6 @@ export const Sidebar: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-emerald-500 p-0.5 shadow-lg shadow-indigo-500/30 relative">
               <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center relative">
-                {/* SVG Monograma Geométrico V en Ticket Minimalista */}
                 <svg className="w-6 h-6 text-indigo-400 fill-current" viewBox="0 0 24 24">
                   <path d="M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1.6.8L16.5 18l-3.5 2.5a1 1 0 0 1-1.2 0L8.3 18l-2.9 2.8A1 1 0 0 1 3 20V4a1 1 0 0 1 1-1zm3 3v10.5l2-1.9a1 1 0 0 1 1.3 0l2.7 1.9 2.7-1.9a1 1 0 0 1 1.3 0l2 1.9V6H7zm2 3h6v2H9V9zm0 4h4v2H9v-2z" />
                 </svg>

@@ -21,6 +21,9 @@ import { SystemHealthPage } from './pages/SystemHealthPage';
 import { BackupsPage } from './pages/BackupsPage';
 import { ErrorLogsPage } from './pages/ErrorLogsPage';
 import { HelpPage } from './pages/HelpPage';
+import { HelpCenterPage } from './pages/HelpCenterPage';
+import { VendixAssistantPage } from './pages/VendixAssistantPage';
+import { SystemDiagnosticsPage } from './pages/SystemDiagnosticsPage';
 import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 
 export const App: React.FC = () => {
@@ -61,6 +64,9 @@ export const App: React.FC = () => {
             <Route path="backups" element={<BackupsPage />} />
             <Route path="error-logs" element={<ErrorLogsPage />} />
             <Route path="help" element={<HelpPage />} />
+            <Route path="help-center" element={<HelpCenterPage />} />
+            <Route path="vendix-assistant" element={<VendixAssistantPage />} />
+            <Route path="diagnostics" element={<SystemDiagnosticsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

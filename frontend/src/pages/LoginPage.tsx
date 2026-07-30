@@ -80,28 +80,7 @@ export const LoginPage: React.FC = () => {
         res.refresh_token
       );
     } catch (err: any) {
-      // Fallback resiliente para acceso instantáneo
-      const localUserId = `usr_${Math.random().toString(36).substring(2, 10)}`;
-      const localCompId = `comp_${Math.random().toString(36).substring(2, 10)}`;
-      setAuth(
-        {
-          id: localUserId,
-          company_id: localCompId,
-          company_name: 'Mi Empresa POS',
-          full_name: loginEmail.split('@')[0] || 'Administrador',
-          role: 'admin',
-          permissions: [
-            'can_change_price', 'can_delete_sale', 'can_open_cash_register',
-            'can_reopen_cash_register', 'can_view_profit', 'can_manage_inventory',
-            'can_manage_users', 'can_manage_settings', 'can_export_reports'
-          ],
-          onboarding_completed: true,
-          currency: 'EUR',
-          plan: 'Starter',
-          subscription_status: 'trial',
-        },
-        `token_${localUserId}`
-      );
+      setError(err.message || 'Correo electrónico o contraseña incorrectos.');
     } finally {
       setIsLoading(false);
     }
@@ -176,14 +155,11 @@ export const LoginPage: React.FC = () => {
         token: res.access_token,
         refreshToken: res.refresh_token,
       });
+      setShowVerifyModal(true);
     } catch (err: any) {
-      setPendingAuth({
-        user: fallbackUserPayload,
-        token: fallbackToken,
-      });
+      setError(err.message || 'Error al registrar la empresa. Intente nuevamente.');
     } finally {
       setIsLoading(false);
-      setShowVerifyModal(true);
     }
   };
 

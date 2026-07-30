@@ -7,7 +7,7 @@ export interface User {
   full_name: string;
   role: string;
   permissions: string[];
-  onboarding_completed?: bool;
+  onboarding_completed?: boolean;
   currency?: string;
   plan?: string;
   subscription_status?: string;
@@ -46,6 +46,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('pos_user_data');
+    sessionStorage.clear();
     set({ user: null, token: null, refreshToken: null });
   },
 }));
