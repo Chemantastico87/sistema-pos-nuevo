@@ -1,7 +1,11 @@
 import sys
 import os
 
-# Añadir directorio backend al PATH de Python en Vercel
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend")))
+# Determinar ruta absoluta al directorio backend en Vercel Serverless
+current_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.abspath(os.path.join(current_dir, "..", "backend"))
+
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
 
 from app.main import app
