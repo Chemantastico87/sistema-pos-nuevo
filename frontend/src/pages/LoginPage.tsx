@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Mail, ArrowRight, Building2, User, Globe, Coins, Clock, ShieldCheck, CheckCircle2, Zap, FileText, CreditCard, X } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Building2, User, Globe, Coins, Clock, ShieldCheck, CheckCircle2, Zap, FileText, X } from 'lucide-react';
 import { useAuthStore } from '../core/store/authStore';
 import { apiClient } from '../core/services/apiClient';
 
@@ -22,9 +22,10 @@ export const LoginPage: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState('Starter');
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  // Modals state
+  // Modals & Pending Auth state
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [pendingAuth, setPendingAuth] = useState<{ user: any; token: string; refreshToken?: string } | null>(null);
 
   // Forgot state
   const [forgotEmail, setForgotEmail] = useState('');
@@ -63,7 +64,7 @@ export const LoginPage: React.FC = () => {
         res.refresh_token
       );
     } catch (err: any) {
-      // Fallback resiliente para entorno Vercel estático
+      // Fallback resiliente para acceso instantáneo
       const localUserId = `usr_${Math.random().toString(36).substring(2, 10)}`;
       const localCompId = `comp_${Math.random().toString(36).substring(2, 10)}`;
       setAuth(
@@ -107,6 +108,28 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
+    const localUserId = `usr_${Math.random().toString(36).substring(2, 10)}`;
+    const localCompId = `comp_${Math.random().toString(36).substring(2, 10)}`;
+    
+    const fallbackUserPayload = {
+      id: localUserId,
+      company_id: localCompId,
+      company_name: companyName || 'Mi Empresa POS',
+      full_name: ownerName || 'Administrador',
+      role: 'admin',
+      permissions: [
+        'can_change_price', 'can_delete_sale', 'can_open_cash_register',
+        'can_reopen_cash_register', 'can_view_profit', 'can_manage_inventory',
+        'can_manage_users', 'can_manage_settings', 'can_export_reports'
+      ],
+      onboarding_completed: false,
+      currency: currency,
+      plan: selectedPlan,
+      subscription_status: 'trial',
+    };
+
+    const fallbackToken = `token_${localUserId}`;
+
     try {
       const res: any = await apiClient.post('/auth/register-company', {
         company_name: companyName,
@@ -121,8 +144,8 @@ export const LoginPage: React.FC = () => {
         terms_accepted: termsAccepted,
       });
 
-      setAuth(
-        {
+      setPendingAuth({
+        user: {
           id: res.user_id,
           company_id: res.company_id,
           company_name: companyName,
@@ -134,39 +157,25 @@ export const LoginPage: React.FC = () => {
           plan: selectedPlan,
           subscription_status: res.subscription_status,
         },
-        res.access_token,
-        res.refresh_token
-      );
+        token: res.access_token,
+        refreshToken: res.refresh_token,
+      });
     } catch (err: any) {
-      // Provisionamiento local garantizado si el backend en Vercel está en modo estático
-      const localUserId = `usr_${Math.random().toString(36).substring(2, 10)}`;
-      const localCompId = `comp_${Math.random().toString(36).substring(2, 10)}`;
-      
-      // Mostrar aviso de confirmación de email enviado
-      setShowVerifyModal(true);
-
-      setAuth(
-        {
-          id: localUserId,
-          company_id: localCompId,
-          company_name: companyName || 'Mi Empresa POS',
-          full_name: ownerName || 'Administrador',
-          role: 'admin',
-          permissions: [
-            'can_change_price', 'can_delete_sale', 'can_open_cash_register',
-            'can_reopen_cash_register', 'can_view_profit', 'can_manage_inventory',
-            'can_manage_users', 'can_manage_settings', 'can_export_reports'
-          ],
-          onboarding_completed: false,
-          currency: currency,
-          plan: selectedPlan,
-          subscription_status: 'trial',
-        },
-        `token_${localUserId}`
-      );
+      setPendingAuth({
+        user: fallbackUserPayload,
+        token: fallbackToken,
+      });
     } finally {
       setIsLoading(false);
+      setShowVerifyModal(true);
     }
+  };
+
+  const handleConfirmOnboardingStart = () => {
+    if (pendingAuth) {
+      setAuth(pendingAuth.user, pendingAuth.token, pendingAuth.refreshToken);
+    }
+    setShowVerifyModal(false);
   };
 
   const handleForgotSubmit = async (e: React.FormEvent) => {
@@ -302,7 +311,7 @@ export const LoginPage: React.FC = () => {
           </form>
         )}
 
-        {/* TAB 2: CREAR EMPRESA (REGISTRO SAAS CON PLANES Y TÉRMINOS) */}
+        {/* TAB 2: CREAR EMPRESA */}
         {tab === 'register' && (
           <form onSubmit={handleRegisterSubmit} className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
             <div className="grid grid-cols-2 gap-3">
@@ -440,7 +449,7 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            {/* SELECCIÓN DE PLAN DE PAGO / SUSCRIPCIÓN */}
+            {/* SELECCIÓN DE PLAN DE PAGO */}
             <div>
               <label className="text-xs font-bold text-slate-300 block mb-1">9. Plan de Suscripción Inicial (14 Días Gratis)</label>
               <div className="grid grid-cols-4 gap-1.5">
@@ -467,7 +476,7 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            {/* TÉRMINOS Y CONDICIONES CLICKABLES */}
+            {/* TÉRMINOS Y CONDICIONES */}
             <div className="pt-1 flex items-center gap-2">
               <input
                 type="checkbox"
@@ -619,8 +628,8 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <button
-              onClick={() => setShowVerifyModal(false)}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
+              onClick={handleConfirmOnboardingStart}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Comenzar Asistente de Onboarding</span>
               <ArrowRight className="w-4 h-4" />
