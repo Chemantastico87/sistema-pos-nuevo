@@ -2,11 +2,18 @@ import sys
 import os
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+root_dir = os.path.dirname(current_dir)
+backend_dir = os.path.join(root_dir, "backend")
 
-app_dir = os.path.join(current_dir, "app")
-if app_dir not in sys.path:
-    sys.path.insert(0, app_dir)
+for d in [backend_dir, root_dir, current_dir]:
+    if os.path.exists(d) and d not in sys.path:
+        sys.path.insert(0, d)
 
-from app.main import app
+try:
+    from app.main import app
+except ModuleNotFoundError:
+    try:
+        from backend.app.main import app
+    except ModuleNotFoundError:
+        import app.main as app_main
+        app = app_main.app

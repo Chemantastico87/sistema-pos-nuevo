@@ -3,10 +3,14 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 from app.core.config import settings
 
-# Forzar driver SQLite asíncrono si no se especificó asyncpg
+# Forzar driver asíncrono según el dialecto (SQLite / PostgreSQL)
 db_url = settings.DATABASE_URL
 if db_url.startswith("sqlite://"):
     db_url = db_url.replace("sqlite://", "sqlite+aiosqlite://")
+elif db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+asyncpg://")
+elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+asyncpg://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
 
 engine = create_async_engine(
     db_url,
