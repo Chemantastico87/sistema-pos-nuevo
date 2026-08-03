@@ -1,0 +1,12 @@
+{
+  "title": "Informes Financieros & Analítica Comercial",
+  "subtitle": "Reportes de ventas por periodo, rentabilidad por producto, impuestos y exportación de datos.",
+  "sales_report": "Reporte de Ventas",
+  "profit_report": "Reporte de Margen & Beneficio",
+  "tax_report": "Reporte de IVA / Impuestos",
+  "export_excel": "Exportar Excel (.xlsx)",
+  "export_csv": "Exportar CSV (.csv)",
+  "export_pdf": "Exportar Informe PDF",
+  "date_range": "Rango de Fechas",
+  "filter_btn": "Filtrar Reporte"
+}

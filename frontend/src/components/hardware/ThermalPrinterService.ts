@@ -1,3 +1,5 @@
+import { useLanguageStore } from '../../core/store/languageStore';
+
 /**
  * Servicio WebDirect Thermal Printer para impresión directa ESC/POS
  * vía WebUSB, WebSerial o WebBluetooth sin diálogos del SO (<2.0s SLA).
@@ -16,31 +18,32 @@ export class ThermalPrinterService {
   }): Uint8Array {
     const encoder = new TextEncoder();
     const commands: number[] = [];
+    const t = useLanguageStore.getState().t;
 
     // Inicializar impresora ESC @
     commands.push(this.ESC, 0x40);
 
     // Alineación centro (ESC a 1)
     commands.push(this.ESC, 0x61, 1);
-    commands.push(...encoder.encode(`${ticketData.title}\n`));
-    commands.push(...encoder.encode(`Ticket: ${ticketData.invoice}\n`));
+    commands.push(...encoder.encode(`${ticketData.title || t('tickets.receipt_header')}\n`));
+    commands.push(...encoder.encode(`${t('tickets.ticket_num')}: ${ticketData.invoice}\n`));
     commands.push(...encoder.encode('--------------------------------\n'));
 
     // Alineación izquierda (ESC a 0)
     commands.push(this.ESC, 0x61, 0);
     ticketData.items.forEach((item) => {
-      const line = `${item.qty}x ${item.name.padEnd(18).substring(0, 18)} $${(item.qty * item.price).toFixed(2)}\n`;
+      const line = `${item.qty}x ${item.name.padEnd(18).substring(0, 18)} ${(item.qty * item.price).toFixed(2)}\n`;
       commands.push(...encoder.encode(line));
     });
 
     commands.push(...encoder.encode('--------------------------------\n'));
     // Alineación derecha para total (ESC a 2)
     commands.push(this.ESC, 0x61, 2);
-    commands.push(...encoder.encode(`TOTAL: $${ticketData.total.toFixed(2)}\n\n`));
+    commands.push(...encoder.encode(`${t('tickets.total')}: ${(ticketData.total).toFixed(2)}\n\n`));
 
     // Pie de ticket
     commands.push(this.ESC, 0x61, 1);
-    commands.push(...encoder.encode(`${ticketData.footer || '¡Gracias por su compra!'}\n\n\n`));
+    commands.push(...encoder.encode(`${ticketData.footer || t('tickets.receipt_thanks')}\n\n\n`));
 
     // Corte de papel (GS V 66 0)
     commands.push(this.GS, 0x56, 66, 0);

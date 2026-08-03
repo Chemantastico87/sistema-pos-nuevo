@@ -1,0 +1,9 @@
+{
+  "title": "Asistente Inteligente VENDIX AI",
+  "subtitle": "Asesoramiento comercial en tiempo real, análisis predictivo de ventas y optimización de precios.",
+  "prompt_ph": "Escribe tu consulta comercial o solicita una recomendación...",
+  "send_btn": "Consultar a VENDIX AI",
+  "thinking": "Analizando métricas comerciales...",
+  "suggested_actions": "Acciones Sugeridas por la IA",
+  "ai_language_note": "La Inteligencia Artificial responderá automáticamente en tu idioma seleccionado (Español)."
+}

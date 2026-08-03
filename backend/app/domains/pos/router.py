@@ -129,7 +129,31 @@ async def checkout(
 
     return sale
 
+@router.post("/sales/{sale_id}/cancel")
+@router.post("/sales/{sale_id}/cancel/")
+@router.patch("/sales/{sale_id}/cancel")
+async def cancel_sale(
+    sale_id: str,
+    tenant: TenantContext = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_db)
+):
+    sale_res = await db.execute(
+        select(SaleModel).where(SaleModel.id == sale_id, SaleModel.company_id == tenant.company_id)
+    )
+    sale = sale_res.scalars().first()
+    if not sale:
+        raise HTTPException(status_code=404, detail="Venta no encontrada.")
+
+    if sale.status == "cancelled":
+        raise HTTPException(status_code=400, detail="La venta ya se encuentra anulada.")
+
+    sale.status = "cancelled"
+    await db.commit()
+    await db.refresh(sale)
+    return {"message": f"Venta {sale.invoice_number} anulada con éxito.", "sale": sale}
+
 @router.post("/sync", response_model=List[SaleResponse])
+@router.post("/sync/", response_model=List[SaleResponse])
 async def sync_offline_sales(
     batch: SyncBatchRequest,
     tenant: TenantContext = Depends(get_current_tenant),

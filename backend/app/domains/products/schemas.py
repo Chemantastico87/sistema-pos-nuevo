@@ -4,7 +4,7 @@ from typing import Optional
 class ProductCreate(BaseModel):
     name: str
     price: float
-    cost_price: float = 0.0
+    cost_price: Optional[float] = None
     stock: float = 0.0
     min_stock: float = 0.0
     max_stock: float = 1000.0
@@ -16,8 +16,8 @@ class ProductCreate(BaseModel):
     supplier: Optional[str] = None
     brand: Optional[str] = None
     vat_rate: float = 21.0
-    margin: float = 0.0
-    profit: float = 0.0
+    margin: Optional[float] = None
+    profit: Optional[float] = None
     unit: str = "unit"
     location: Optional[str] = None
     lot_number: Optional[str] = None
@@ -53,10 +53,10 @@ class ProductResponse(BaseModel):
     company_id: str
     name: str
     price: float
-    cost_price: float
+    cost_price: Optional[float] = None
     vat_rate: float
-    margin: float
-    profit: float
+    margin: Optional[float] = None
+    profit: Optional[float] = None
     stock: float
     min_stock: float
     max_stock: float
@@ -84,3 +84,19 @@ class CategoryResponse(BaseModel):
     id: str
     company_id: str
     name: str
+
+class ProductPriceHistoryResponse(BaseModel):
+    id: str
+    company_id: str
+    product_id: str
+    user_id: Optional[str] = None
+    old_price: float
+    new_price: float
+    old_cost: Optional[float] = None
+    new_cost: Optional[float] = None
+    reason: Optional[str] = None
+    created_at: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+

@@ -6,27 +6,31 @@ import {
   ShieldCheck, CreditCard, Database, Activity, HelpCircle, AlertOctagon, Sparkles
 } from 'lucide-react';
 import { useAuthStore } from '../../core/store/authStore';
+import { useTranslation } from '../../core/store/languageStore';
+import { LanguageSelector } from '../common/LanguageSelector';
 
 export const Sidebar: React.FC = () => {
   const user = useAuthStore((s) => s.user);
+  const { t } = useTranslation();
 
   const navItems = [
-    { to: '/dashboard', label: 'VENDIX Insights', icon: Home },
-    { to: '/', label: 'VENDIX POS TPV', icon: Monitor },
-    { to: '/products', label: 'Productos', icon: Package },
-    { to: '/customers', label: 'Clientes', icon: Users },
-    { to: '/inventory', label: 'Inventario', icon: Warehouse },
-    { to: '/cash', label: 'Caja & Cierre', icon: Wallet },
-    { to: '/reports', label: 'Reportes', icon: BarChart3 },
-    { to: '/tickets', label: 'Tickets', icon: Receipt },
-    { to: '/users', label: 'Usuarios', icon: UserCheck },
-    { to: '/subscriptions', label: 'Suscripción', icon: CreditCard },
-    { to: '/backups', label: 'Backups Enterprise', icon: Database },
-    { to: '/help-center', label: 'Centro de Ayuda', icon: BookOpen },
-    { to: '/vendix-assistant', label: 'Asistente VENDIX AI', icon: Bot },
-    { to: '/diagnostics', label: 'Diagnóstico Sistema', icon: Activity },
+    { to: '/dashboard', label: t('nav_insights'), icon: Home },
+    { to: '/', label: t('nav_pos'), icon: Monitor },
+    { to: '/products', label: t('nav_products'), icon: Package },
+    { to: '/customers', label: t('nav_customers'), icon: Users },
+    { to: '/inventory', label: t('nav_inventory'), icon: Warehouse },
+    { to: '/cash', label: t('nav_cash'), icon: Wallet },
+    { to: '/sales', label: t('nav_daily_sales'), icon: Receipt },
+    { to: '/reports', label: t('nav_reports'), icon: BarChart3 },
+    { to: '/tickets', label: t('nav_tickets'), icon: Receipt },
+    { to: '/users', label: t('nav_users'), icon: UserCheck },
+    { to: '/subscriptions', label: t('nav_subscriptions'), icon: CreditCard },
+    { to: '/backups', label: t('nav_backups'), icon: Database },
+    { to: '/help-center', label: t('nav_help'), icon: BookOpen },
+    { to: '/vendix-assistant', label: t('nav_assistant'), icon: Bot },
+    { to: '/diagnostics', label: t('nav_diagnostics'), icon: Activity },
     { to: '/help', label: 'Soporte & Roadmap', icon: HelpCircle },
-    { to: '/settings', label: 'Configuración', icon: Settings },
+    { to: '/settings', label: t('nav_settings'), icon: Settings },
   ];
 
   if (user?.role === 'admin' || user?.role === 'superadmin') {
@@ -91,8 +95,8 @@ export const Sidebar: React.FC = () => {
       <div className="space-y-3 pt-3 border-t border-slate-900">
         <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">VENDIX Cloud</p>
-            <p className="text-xs font-extrabold text-emerald-400">Operacional</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('language')}</p>
+            <LanguageSelector variant="dark" showLabel={true} direction="up" />
           </div>
           <div className="relative flex items-center justify-center">
             <div className="w-3.5 h-3.5 rounded-full border-2 border-emerald-400 animate-ping absolute" />

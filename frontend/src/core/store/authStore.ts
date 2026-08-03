@@ -6,6 +6,8 @@ export interface User {
   company_name?: string;
   full_name: string;
   role: string;
+  status?: string;
+  email_verified?: boolean;
   permissions: string[];
   onboarding_completed?: boolean;
   currency?: string;
@@ -65,6 +67,9 @@ export const useAuthStore = create<AuthState>((set) => {
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('pos_user_data');
       sessionStorage.clear();
+      if (typeof document !== 'undefined') {
+        document.cookie = 'vendix_lang=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      }
       set({ user: null, token: null, refreshToken: null });
     },
   };

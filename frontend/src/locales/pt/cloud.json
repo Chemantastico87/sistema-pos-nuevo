@@ -1,0 +1,10 @@
+{
+  "title": "Backups Enterprise & VENDIX Cloud",
+  "subtitle": "Cópias de segurança criptografadas na nuvem, restauração e sincronização multi-filial.",
+  "create_backup": "Criar Backup Agora",
+  "restore_backup": "Restaurar Backup",
+  "backups_list": "Histórico de Cópias de Segurança",
+  "storage_driver": "Motor de Armazenamento",
+  "aes_encrypted": "Criptografia AES-256 Ativa",
+  "checksum": "Soma de Verificação Checksum"
+}

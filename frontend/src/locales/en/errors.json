@@ -1,0 +1,16 @@
+{
+  "http_401": "Session expired or invalid credentials. Please sign in again.",
+  "http_403": "You do not have sufficient permissions to perform this action.",
+  "http_404": "The requested resource was not found.",
+  "http_409": "Conflict with entered data (e.g. duplicate barcode or email).",
+  "http_422": "Sent data contains validation or format errors.",
+  "http_500": "Internal server error. Technical support has been notified.",
+  "network_error": "Connection error with server. Please check your internet connection.",
+  "user_not_found": "User or email address not found.",
+  "invalid_credentials": "Incorrect password entered.",
+  "company_exists": "A company is already registered with this corporate email.",
+  "product_not_found": "Specified product does not exist in database.",
+  "out_of_stock": "Product does not have sufficient stock to complete operation.",
+  "cash_register_closed": "Cash register is currently closed. You must open a shift to checkout.",
+  "cash_register_already_open": "Cash register is already open for this user."
+}

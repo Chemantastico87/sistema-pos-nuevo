@@ -1,0 +1,18 @@
+{
+  "title": "Cash Register Control & Balancing",
+  "subtitle": "Management of initial float, daily Z-closures, cash deposits, and withdrawals.",
+  "opening_balance": "Initial Cash Balance",
+  "open_register_btn": "Open Cash Register",
+  "close_register_btn": "Perform Daily Z-Closure",
+  "register_status": "Register Status",
+  "opened_at": "Opened at",
+  "closed_at": "Closed at",
+  "cash_movements": "Cash Movements",
+  "cash_in": "Cash Deposit",
+  "cash_out": "Cash Withdrawal",
+  "expected_balance": "Expected Cash Balance",
+  "counted_balance": "Counted Physical Cash",
+  "difference": "Cash Difference",
+  "closure_notes": "Z-Closure Notes",
+  "confirm_closure": "Confirm and Sign Z-Closure"
+}

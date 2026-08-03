@@ -1,0 +1,8 @@
+{
+  "welcome_subject": "¡Bienvenido a VENDIX POS! Tu cuenta ha sido activada",
+  "welcome_body": "Gracias por registrar tu empresa. Comienza a gestionar tus ventas e inventarios inmediatamente.",
+  "reset_subject": "Instrucciones para restablecer tu contraseña de VENDIX POS",
+  "reset_body": "Haz clic en el siguiente enlace para crear tu nueva contraseña segura.",
+  "invoice_subject": "Factura / Comprobante de Venta {{invoice_number}}",
+  "invoice_body": "Adjunto encontrarás tu factura en formato PDF. Gracias por tu compra."
+}

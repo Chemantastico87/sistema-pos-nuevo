@@ -1,0 +1,10 @@
+{
+  "title": "Enterprise Backups & VENDIX Cloud",
+  "subtitle": "Encrypted cloud backups, point-in-time restore, and multi-store synchronization.",
+  "create_backup": "Create Backup Now",
+  "restore_backup": "Restore Backup",
+  "backups_list": "Backup History",
+  "storage_driver": "Storage Engine",
+  "aes_encrypted": "AES-256 Encryption Active",
+  "checksum": "Checksum Verification"
+}

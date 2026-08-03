@@ -1,0 +1,9 @@
+{
+  "sale_success": "Venda processada com sucesso",
+  "product_saved": "Produto salvo com sucesso",
+  "product_deleted": "Produto excluído do sistema",
+  "customer_saved": "Cliente salvo com sucesso",
+  "stock_adjusted": "Estoque e histórico de movimentações atualizados",
+  "settings_saved": "Configurações salvas com sucesso",
+  "offline_sync_success": "Vendas offline sincronizadas com sucesso com o servidor"
+}

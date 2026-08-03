@@ -1,0 +1,15 @@
+{
+  "title": "General System Settings",
+  "subtitle": "Business setup, ESC/POS thermal printers, default taxes, customization, and plugins.",
+  "company_profile": "Company Profile",
+  "company_name": "Commercial Name",
+  "tax_id": "Tax ID / VAT Number",
+  "phone": "Contact Phone",
+  "address": "Tax / Store Address",
+  "currency": "Main Currency",
+  "tax_rate": "Default Tax Rate (%)",
+  "printer_settings": "ESC/POS Thermal Printer Setup",
+  "printer_driver": "Direct USB/Network Print Driver",
+  "test_print": "Print Test Receipt",
+  "save_settings": "Save Settings"
+}

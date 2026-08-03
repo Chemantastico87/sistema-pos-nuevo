@@ -30,6 +30,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onFinish }) 
   const [openingBalance, setOpeningBalance] = useState('100.00');
 
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleNextStep = () => {
     if (step < 8) {
@@ -43,10 +44,23 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onFinish }) 
     }
   };
 
-  const handleCompleteWizard = async () => {
-    setIsLoading(true);
+  const handleSkipWizard = async () => {
+    setOnboardingCompleted(true);
+    onFinish();
     try {
-      // Guardar configuración de empresa
+      await apiClient.put('/auth/company-settings', { onboarding_completed: true });
+    } catch (e) {
+      // Ignorar errores al omitir
+    }
+  };
+
+  const handleCompleteWizard = async () => {
+    // Cerrar el modal e ir al TPV de inmediato
+    setOnboardingCompleted(true);
+    onFinish();
+
+    try {
+      // Guardar configuración de empresa en segundo plano
       await apiClient.put('/auth/company-settings', {
         tax_id: taxId,
         address,
@@ -59,13 +73,17 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onFinish }) 
 
       // Crear primer producto si se ingresó
       if (productName && productPrice) {
-        await apiClient.post('/products', {
-          name: productName,
-          price: parseFloat(productPrice) || 0,
-          cost_price: parseFloat(productCost) || 0,
-          stock: parseFloat(productStock) || 10,
-          vat_rate: vatRate,
-        });
+        try {
+          await apiClient.post('/products', {
+            name: productName,
+            price: parseFloat(productPrice) || 0,
+            cost_price: productCost.trim() !== '' ? parseFloat(productCost) : null,
+            stock: parseFloat(productStock) || 10,
+            vat_rate: vatRate,
+          });
+        } catch (e) {
+          console.warn('Error no crítico creando primer producto:', e);
+        }
       }
 
       // Abrir caja con saldo inicial si se solicita
@@ -79,13 +97,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onFinish }) 
           // Si la caja ya estaba abierta, ignorar error
         }
       }
-
-      setOnboardingCompleted(true);
-      onFinish();
-    } catch (err) {
-      console.error('Error completando el onboarding:', err);
-    } finally {
-      setIsLoading(false);
+    } catch (err: any) {
+      console.error('Error guardando onboarding:', err);
     }
   };
 
@@ -93,7 +106,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onFinish }) 
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
       <div className="w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col font-sans">
         
-        {/* Header con Barra de Progreso de 8 Pasos */}
+        {/* Header con Barra de Progreso de 8 Pasos y Botón Cerrar/Omitir */}
         <div className="p-6 bg-slate-800/80 border-b border-slate-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
@@ -105,19 +118,28 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onFinish }) 
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-              <div
-                key={s}
-                className={`w-3 h-3 rounded-full transition-all ${
-                  s === step
-                    ? 'bg-indigo-500 scale-125 ring-4 ring-indigo-500/20'
-                    : s < step
-                    ? 'bg-emerald-500'
-                    : 'bg-slate-700'
-                }`}
-              />
-            ))}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                <div
+                  key={s}
+                  className={`w-3 h-3 rounded-full transition-all ${
+                    s === step
+                      ? 'bg-indigo-500 scale-125 ring-4 ring-indigo-500/20'
+                      : s < step
+                      ? 'bg-emerald-500'
+                      : 'bg-slate-700'
+                  }`}
+                />
+              ))}
+            </div>
+            <button
+              onClick={handleSkipWizard}
+              title="Omitir asistente e ir directo al TPV"
+              className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all ml-1 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
@@ -332,13 +354,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onFinish }) 
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-300 block mb-1">Precio Costo ({currency})</label>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">Precio Compra (Opcional) ({currency})</label>
                     <input
                       type="number"
                       step="0.01"
                       value={productCost}
                       onChange={(e) => setProductCost(e.target.value)}
-                      placeholder="6.00"
+                      placeholder="Opcional"
                       className="w-full bg-slate-800 border border-slate-700 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-white outline-none"
                     />
                   </div>

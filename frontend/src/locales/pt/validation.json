@@ -1,0 +1,9 @@
+{
+  "required_field": "Este campo é obrigatório",
+  "invalid_email": "Digite um endereço de e-mail válido",
+  "invalid_number": "Digite um valor numérico válido",
+  "min_value": "O valor mínimo permitido é {{min}}",
+  "max_value": "O valor máximo permitido é {{max}}",
+  "password_too_short": "A senha deve ter pelo menos 6 caracteres",
+  "terms_required": "Você deve aceitar os termos de serviço para continuar"
+}

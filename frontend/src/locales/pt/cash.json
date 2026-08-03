@@ -1,0 +1,18 @@
+{
+  "title": "Controle e Fechamento de Caixa",
+  "subtitle": "Gestão do saldo inicial, fechamentos diários (Fechamento Z), entradas e retiradas de dinheiro.",
+  "opening_balance": "Saldo Inicial do Caixa",
+  "open_register_btn": "Abrir Caixa Registradora",
+  "close_register_btn": "Realizar Fechamento de Caixa (Z)",
+  "register_status": "Status do Caixa",
+  "opened_at": "Aberto em",
+  "closed_at": "Fechado em",
+  "cash_movements": "Movimentações de Caixa",
+  "cash_in": "Entrada de Dinheiro",
+  "cash_out": "Sangria / Retirada",
+  "expected_balance": "Saldo Esperado no Caixa",
+  "counted_balance": "Saldo Físico Contado",
+  "difference": "Diferença de Caixa",
+  "closure_notes": "Observações do Fechamento Z",
+  "confirm_closure": "Confirmar e Assinar Fechamento Z"
+}

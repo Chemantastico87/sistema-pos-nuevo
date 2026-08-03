@@ -1,0 +1,15 @@
+{
+  "title": "Configuración General del Sistema",
+  "subtitle": "Ajustes comerciales, impresoras térmicas, impuestos, personalización y plugins.",
+  "company_profile": "Perfil de Empresa",
+  "company_name": "Nombre Comercial",
+  "tax_id": "CIF / NIF / Tax ID",
+  "phone": "Teléfono de Contacto",
+  "address": "Dirección Fiscal",
+  "currency": "Moneda Principal",
+  "tax_rate": "Tasa de Impuesto Predeterminada (%)",
+  "printer_settings": "Configuración de Impresoras Térmicas ESC/POS",
+  "printer_driver": "Controlador de Impresión Directa USB/Red",
+  "test_print": "Imprimir Ticket de Prueba",
+  "save_settings": "Guardar Configuración"
+}

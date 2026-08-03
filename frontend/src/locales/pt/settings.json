@@ -1,0 +1,15 @@
+{
+  "title": "Configurações Gerais do Sistema",
+  "subtitle": "Ajustes comerciais, impressoras térmicas ESC/POS, impostos, personalização e plugins.",
+  "company_profile": "Perfil da Empresa",
+  "company_name": "Nome Comercial",
+  "tax_id": "CNPJ / CPF / NIF",
+  "phone": "Telefone de Contato",
+  "address": "Endereço Fiscal",
+  "currency": "Moeda Principal",
+  "tax_rate": "Taxa de Imposto Padrão (%)",
+  "printer_settings": "Configuração de Impressoras Térmicas ESC/POS",
+  "printer_driver": "Driver de Impressão Direta USB/Rede",
+  "test_print": "Imprimir Comprovante de Teste",
+  "save_settings": "Salvar Configurações"
+}

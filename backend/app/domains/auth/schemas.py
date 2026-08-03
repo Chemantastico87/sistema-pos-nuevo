@@ -17,7 +17,12 @@ class CompanyRegisterRequest(BaseModel):
     terms_accepted: bool
 
 class ForgotPasswordRequest(BaseModel):
-    email: str
+    email: EmailStr
+
+class DirectResetPasswordRequest(BaseModel):
+    email: EmailStr
+    new_password: str
+    confirm_password: str
 
 class ResetPasswordRequest(BaseModel):
     token: str
@@ -25,6 +30,9 @@ class ResetPasswordRequest(BaseModel):
 
 class VerifyEmailRequest(BaseModel):
     token: str
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
@@ -37,6 +45,8 @@ class TokenResponse(BaseModel):
     company_id: str
     full_name: str
     role: str
+    status: str = "active"
+    email_verified: bool = True
     permissions: List[str]
     onboarding_completed: bool
     currency: str
@@ -50,6 +60,8 @@ class UserProfile(BaseModel):
     email: str
     full_name: str
     role: str
+    status: str
+    email_verified: bool
     permissions: List[str]
     onboarding_completed: bool
     currency: str
@@ -57,6 +69,17 @@ class UserProfile(BaseModel):
     timezone: str
     plan: str
     subscription_status: str
+
+class UserSessionResponse(BaseModel):
+    id: str
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    os_name: Optional[str] = None
+    device_type: Optional[str] = None
+    location: Optional[str] = None
+    created_at: str
+    last_activity: str
+    is_active: bool
 
 class CompanyUpdateSettings(BaseModel):
     name: Optional[str] = None

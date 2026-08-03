@@ -1,0 +1,17 @@
+{
+  "title": "Central de Ajuda & Documentação VENDIX",
+  "subtitle": "Guias interativos, manuais do usuário, atalhos de teclado e solução de problemas.",
+  "search_help_ph": "Buscar artigos de ajuda, atalhos de teclado ou configurações...",
+  "pos_shortcuts": "Atalhos de Teclado no Caixa",
+  "shortcuts_desc": "Pressione de F1 a F8 na tela de vendas para operar com ultra velocidade sem usar o mouse.",
+  "f1_new_sale": "F1: Nova Venda / Limpar Carrinho",
+  "f2_search": "F2: Buscar Produto / Cliente",
+  "f3_scan": "F3: Ativar Modo Leitor de Código de Barras",
+  "f4_checkout": "F4: Cobrar Venda Instantaneamente",
+  "f7_discount": "F7: Aplicar Desconto no Comprovante",
+  "f8_drawer": "F8: Abrir Gaveta de Dinheiro",
+  "enter_checkout": "Enter: Confirmar Venda",
+  "articles_section": "Guias e Tutoriais Recomendados",
+  "contact_support": "Precisa de ajuda da nossa equipe de suporte Enterprise?",
+  "support_btn": "Contatar Suporte 24/7"
+}

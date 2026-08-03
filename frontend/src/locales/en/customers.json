@@ -1,0 +1,15 @@
+{
+  "title": "Customer Management & CRM",
+  "subtitle": "Directory control, purchase history, and loyalty points rewards.",
+  "register_btn": "+ Register Customer",
+  "search_ph": "Search customer by name, Tax ID or email...",
+  "name": "Customer / Company Name",
+  "tax_id": "Tax ID / SSN / DNI",
+  "email": "Email Address",
+  "phone": "Phone / WhatsApp",
+  "address": "Address",
+  "loyalty_points": "Loyalty Points",
+  "last_purchase": "Last Purchase",
+  "save_btn": "Save Customer",
+  "no_customers": "No customers registered in system."
+}

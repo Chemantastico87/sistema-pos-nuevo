@@ -1,0 +1,17 @@
+{
+  "title": "VENDIX Help Center & Documentation",
+  "subtitle": "Interactive guides, user manuals, keyboard shortcuts, and troubleshooting.",
+  "search_help_ph": "Search help articles, keyboard shortcuts, or settings...",
+  "pos_shortcuts": "POS Keyboard Shortcuts",
+  "shortcuts_desc": "Press F1 to F8 on checkout screen for ultra-fast operation without touching mouse.",
+  "f1_new_sale": "F1: New Sale / Clear Cart",
+  "f2_search": "F2: Search Product / Customer",
+  "f3_scan": "F3: Activate Barcode Scanner Mode",
+  "f4_checkout": "F4: Instant Checkout",
+  "f7_discount": "F7: Apply Ticket Discount",
+  "f8_drawer": "F8: Open Cash Drawer",
+  "enter_checkout": "Enter: Confirm Checkout",
+  "articles_section": "Recommended Guides & Tutorials",
+  "contact_support": "Need help from our Enterprise support team?",
+  "support_btn": "Contact 24/7 Support"
+}

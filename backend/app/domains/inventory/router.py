@@ -62,8 +62,9 @@ async def get_inventory_kpis(
     result = await db.execute(query)
     products = result.scalars().all()
 
-    total_value = sum(float(p.stock) * float(p.cost_price or 0.0) for p in products)
-    potential_profit = sum(float(p.stock) * (float(p.price or 0.0) - float(p.cost_price or 0.0)) for p in products)
+    total_value = sum(float(p.stock) * float(p.cost_price) for p in products if p.cost_price is not None)
+    potential_profit = sum(float(p.stock) * (float(p.price or 0.0) - float(p.cost_price)) for p in products if p.cost_price is not None)
+    products_without_cost = sum(1 for p in products if p.cost_price is None)
     out_of_stock = sum(1 for p in products if float(p.stock) <= 0)
     low_stock = sum(1 for p in products if float(p.stock) > 0 and float(p.stock) <= float(p.min_stock or 0.0))
     no_movement = sum(1 for p in products if p.last_sale_at is None)
@@ -71,11 +72,13 @@ async def get_inventory_kpis(
     return {
         "total_inventory_value": total_value,
         "potential_profit": potential_profit,
+        "products_without_cost_count": products_without_cost,
         "out_of_stock_count": out_of_stock,
         "low_stock_count": low_stock,
         "no_movement_count": no_movement,
         "total_products": len(products)
     }
+
 
 @router.get("/movements")
 async def list_inventory_movements(

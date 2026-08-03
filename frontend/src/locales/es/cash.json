@@ -1,0 +1,18 @@
+{
+  "title": "Control & Arqueo de Caja Registradora",
+  "subtitle": "Gestión del fondo inicial, cierres diarios (Cierre Z), ingresos y egresos de efectivo.",
+  "opening_balance": "Fondo Inicial de Caja",
+  "open_register_btn": "Abrir Caja Registradora",
+  "close_register_btn": "Realizar Cierre de Caja (Z)",
+  "register_status": "Estado de Caja",
+  "opened_at": "Abierta el",
+  "closed_at": "Cerrada el",
+  "cash_movements": "Movimientos de Caja",
+  "cash_in": "Ingreso de Efectivo",
+  "cash_out": "Retiro / Egreso de Efectivo",
+  "expected_balance": "Saldo Esperado en Caja",
+  "counted_balance": "Saldo Físico Contado",
+  "difference": "Diferencia de Caja",
+  "closure_notes": "Observaciones del Cierre Z",
+  "confirm_closure": "Confirmar y Firmar Cierre Z"
+}

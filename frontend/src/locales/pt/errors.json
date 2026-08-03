@@ -1,0 +1,16 @@
+{
+  "http_401": "Sessão expirada ou credenciais inválidas. Por favor faça login novamente.",
+  "http_403": "Você não tem permissões suficientes para realizar esta ação.",
+  "http_404": "O recurso solicitado não foi encontrado.",
+  "http_409": "Existe um conflito com os dados informados (ex. código ou e-mail duplicado).",
+  "http_422": "Os dados enviados contêm erros de formato ou validação.",
+  "http_500": "Erro interno do servidor. Nossa equipe técnica foi notificada.",
+  "network_error": "Erro de conexão com o servidor. Verifique sua conexão com a internet.",
+  "user_not_found": "Usuário ou e-mail não encontrado.",
+  "invalid_credentials": "A senha digitada está incorreta.",
+  "company_exists": "Já existe uma empresa cadastrada com este e-mail corporativo.",
+  "product_not_found": "O produto especificado não existe no banco de dados.",
+  "out_of_stock": "O produto não possui estoque suficiente para concluir a operação.",
+  "cash_register_closed": "O caixa registrador está fechado. É necessário abrir o turno para cobrar.",
+  "cash_register_already_open": "O caixa registrador já está aberto para este usuário."
+}

@@ -1,0 +1,15 @@
+{
+  "title": "Gestão de Clientes & CRM",
+  "subtitle": "Controle de diretório comercial, histórico de compras e programa de fidelidade.",
+  "register_btn": "+ Cadastrar Cliente",
+  "search_ph": "Buscar cliente por nome, CPF/CNPJ ou e-mail...",
+  "name": "Cliente / Razão Social",
+  "tax_id": "CPF / CNPJ / DNI",
+  "email": "Endereço de E-mail",
+  "phone": "Telefone / WhatsApp",
+  "address": "Endereço",
+  "loyalty_points": "Pontos de Fidelidade",
+  "last_purchase": "Última Compra",
+  "save_btn": "Salvar Cliente",
+  "no_customers": "Nenhum cliente cadastrado no sistema."
+}

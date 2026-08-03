@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Package, AlertTriangle, TrendingUp, DollarSign, Archive, ArrowUpRight, ArrowDownRight, RefreshCw, Plus, Search, Filter, History, Calendar, MapPin, Tag } from 'lucide-react';
 import { apiClient } from '../core/services/apiClient';
 import { useAuthStore } from '../core/store/authStore';
+import { useTranslation } from '../core/store/languageStore';
 
 export const InventoryPage: React.FC = () => {
+  const { t } = useTranslation();
   const [kpis, setKpis] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
@@ -60,6 +62,12 @@ export const InventoryPage: React.FC = () => {
     }
   };
 
+  const floatVal = (v: any): number => {
+    if (v === null || v === undefined) return 0;
+    const n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+  };
+
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -68,7 +76,7 @@ export const InventoryPage: React.FC = () => {
         barcode,
         sku,
         reference,
-        cost_price: parseFloat(costPrice) || 0,
+        cost_price: costPrice.trim() !== '' ? parseFloat(costPrice) : null,
         price: parseFloat(salePrice) || 0,
         stock: parseFloat(stock) || 0,
         min_stock: parseFloat(minStock) || 0,
@@ -107,6 +115,8 @@ export const InventoryPage: React.FC = () => {
       });
 
       setShowAdjustModal(false);
+      setAdjustProductId('');
+      setNewStockVal('');
       setAdjustReason('');
       fetchInventoryData();
     } catch (err: any) {
@@ -120,7 +130,7 @@ export const InventoryPage: React.FC = () => {
     setBarcode(p.barcode || '');
     setSku(p.sku || '');
     setReference(p.reference || '');
-    setCostPrice(p.cost_price?.toString() || '0');
+    setCostPrice(p.cost_price !== null && p.cost_price !== undefined ? p.cost_price.toString() : '');
     setSalePrice(p.price?.toString() || '0');
     setStock(p.stock?.toString() || '0');
     setMinStock(p.min_stock?.toString() || '5');
@@ -163,20 +173,20 @@ export const InventoryPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight font-heading">
-            Gestión Profesional de Inventario
+            {t('inventory_title')}
           </h1>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Valoración en tiempo real, trazabilidad por lotes, control de márgenes e historial de movimientos.
+            {t('inventory_subtitle')}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => { resetProductForm(); setShowProductModal(true); }}
-            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-2"
+            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Crear Producto</span>
+            <span>{t('add_product')}</span>
           </button>
         </div>
       </div>
@@ -184,43 +194,43 @@ export const InventoryPage: React.FC = () => {
       {/* Tarjetas KPI de Inventario */}
       <div className="grid grid-cols-6 gap-3">
         <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-400 block uppercase">Valor Inventario</span>
+          <span className="text-[11px] font-bold text-slate-400 block uppercase">{t('inventory_val')}</span>
           <span className="text-xl font-black text-slate-900 mt-1 block">
             {currency} {kpis?.total_inventory_value?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
           </span>
-          <span className="text-[10px] text-slate-500 font-medium">Coste total almacenado</span>
+          <span className="text-[10px] text-slate-500 font-medium">{t('cost_stored')}</span>
         </div>
 
         <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-400 block uppercase">Beneficio Potencial</span>
+          <span className="text-[11px] font-bold text-slate-400 block uppercase">{t('potential_profit')}</span>
           <span className="text-xl font-black text-emerald-600 mt-1 block">
             {currency} {kpis?.potential_profit?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
           </span>
-          <span className="text-[10px] text-emerald-600 font-medium">Margen estimado venta</span>
+          <span className="text-[10px] text-emerald-600 font-medium">{t('estimated_margin')}</span>
         </div>
 
         <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-400 block uppercase">Productos Agotados</span>
+          <span className="text-[11px] font-bold text-slate-400 block uppercase">{t('out_of_stock')}</span>
           <span className="text-xl font-black text-rose-600 mt-1 block">{kpis?.out_of_stock_count || 0}</span>
-          <span className="text-[10px] text-rose-600 font-medium">Requiere reposición</span>
+          <span className="text-[10px] text-rose-600 font-medium">{t('requires_replenishment')}</span>
         </div>
 
         <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-400 block uppercase">Bajo Mínimo</span>
+          <span className="text-[11px] font-bold text-slate-400 block uppercase">{t('low_stock')}</span>
           <span className="text-xl font-black text-amber-600 mt-1 block">{kpis?.low_stock_count || 0}</span>
-          <span className="text-[10px] text-amber-600 font-medium">Alerta preventivas</span>
+          <span className="text-[10px] text-amber-600 font-medium">{t('preventive_alert')}</span>
         </div>
 
         <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-400 block uppercase">Sin Movimiento</span>
+          <span className="text-[11px] font-bold text-slate-400 block uppercase">{t('no_movement')}</span>
           <span className="text-xl font-black text-slate-700 mt-1 block">{kpis?.no_movement_count || 0}</span>
-          <span className="text-[10px] text-slate-500 font-medium">Stock inactivo</span>
+          <span className="text-[10px] text-slate-500 font-medium">{t('inactive_stock')}</span>
         </div>
 
         <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-bold text-slate-400 block uppercase">Total Artículos</span>
+          <span className="text-[11px] font-bold text-slate-400 block uppercase">{t('total_items')}</span>
           <span className="text-xl font-black text-indigo-600 mt-1 block">{kpis?.total_products || 0}</span>
-          <span className="text-[10px] text-indigo-600 font-medium">En catálogo</span>
+          <span className="text-[10px] text-indigo-600 font-medium">{t('in_catalog')}</span>
         </div>
       </div>
 
@@ -228,26 +238,26 @@ export const InventoryPage: React.FC = () => {
       <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
         <button
           onClick={() => setActiveTab('products')}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'products'
               ? 'bg-indigo-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <Package className="w-4 h-4" />
-          <span>Catálogo de Productos ({filteredProducts.length})</span>
+          <span>{t('product_catalog_tab')} ({filteredProducts.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('movements')}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'movements'
               ? 'bg-indigo-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <History className="w-4 h-4" />
-          <span>Historial de Movimientos ({movements.length})</span>
+          <span>{t('movements_history_tab')} ({movements.length})</span>
         </button>
       </div>
 
@@ -261,7 +271,7 @@ export const InventoryPage: React.FC = () => {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por nombre, código de barras o SKU..."
+                placeholder={t('search_inventory_ph')}
                 className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-800 outline-none"
               />
             </div>
@@ -271,22 +281,23 @@ export const InventoryPage: React.FC = () => {
             <table className="w-full text-left text-xs text-slate-700">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="p-3">Producto</th>
-                  <th className="p-3">SKU / Cód. Barras</th>
-                  <th className="p-3 text-right">Precio Compra</th>
-                  <th className="p-3 text-right">Precio Venta</th>
-                  <th className="p-3 text-right">Margen / Beneficio</th>
-                  <th className="p-3 text-right">Stock Actual</th>
-                  <th className="p-3">Ubicación / Lote</th>
-                  <th className="p-3 text-right">Acciones</th>
+                  <th className="p-3">{t('th_product')}</th>
+                  <th className="p-3">{t('th_sku_barcode')}</th>
+                  <th className="p-3 text-right">{t('th_purchase_price')}</th>
+                  <th className="p-3 text-right">{t('th_sale_price')}</th>
+                  <th className="p-3 text-right">{t('th_margin_profit')}</th>
+                  <th className="p-3 text-right">{t('th_current_stock')}</th>
+                  <th className="p-3">{t('th_location_lot')}</th>
+                  <th className="p-3 text-right">{t('th_actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredProducts.map((p) => {
-                  const cost = floatVal(p.cost_price);
+                  const hasCost = p.cost_price !== null && p.cost_price !== undefined && !isNaN(p.cost_price);
+                  const cost = hasCost ? floatVal(p.cost_price) : null;
                   const price = floatVal(p.price);
-                  const profit = price - cost;
-                  const margin = price > 0 ? (profit / price) * 100 : 0;
+                  const profit = hasCost && cost !== null ? price - cost : null;
+                  const margin = hasCost && cost !== null && price > 0 ? (profit! / price) * 100 : null;
                   const currentStock = floatVal(p.stock);
                   const isLow = currentStock <= floatVal(p.min_stock);
 
@@ -300,12 +311,27 @@ export const InventoryPage: React.FC = () => {
                         <div>{p.barcode || '-'}</div>
                         <div className="text-[10px] text-slate-400">{p.sku ? `SKU: ${p.sku}` : ''}</div>
                       </td>
-                      <td className="p-3 text-right font-medium">{currency} {cost.toFixed(2)}</td>
+                      <td className="p-3 text-right font-medium">
+                        {hasCost && cost !== null ? (
+                          `${currency} ${cost.toFixed(2)}`
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 font-bold text-[10px]">
+                            Sin coste registrado
+                          </span>
+                        )}
+                      </td>
                       <td className="p-3 text-right font-bold text-slate-900">{currency} {price.toFixed(2)}</td>
                       <td className="p-3 text-right">
-                        <span className="text-emerald-600 font-bold block">{currency} {profit.toFixed(2)}</span>
-                        <span className="text-[10px] text-slate-400 block">{margin.toFixed(1)}% margen</span>
+                        {hasCost && profit !== null && margin !== null ? (
+                          <>
+                            <span className="text-emerald-600 font-bold block">{currency} {profit.toFixed(2)}</span>
+                            <span className="text-[10px] text-slate-400 block">{margin.toFixed(1)}% margen</span>
+                          </>
+                        ) : (
+                          <span className="text-slate-400 text-[11px]">—</span>
+                        )}
                       </td>
+
                       <td className="p-3 text-right">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-black inline-block ${
                           currentStock <= 0
@@ -341,7 +367,7 @@ export const InventoryPage: React.FC = () => {
                 {filteredProducts.length === 0 && (
                   <tr>
                     <td colSpan={8} className="p-6 text-center text-slate-400">
-                      No hay productos registrados en el inventario. Haz clic en "Crear Producto" para agregar el primero.
+                      {t('no_products_inventory')}
                     </td>
                   </tr>
                 )}
@@ -408,13 +434,13 @@ export const InventoryPage: React.FC = () => {
 
       {/* MODAL CREAR / EDITAR PRODUCTO */}
       {showProductModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="w-full max-w-2xl bg-white rounded-3xl border border-slate-200 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-slate-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto">
+          <div className="w-full max-w-2xl bg-white rounded-3xl border border-slate-200 shadow-2xl p-4 sm:p-6 space-y-4 max-h-[92vh] flex flex-col overflow-y-auto my-auto">
+            <h3 className="text-lg font-bold text-slate-900 shrink-0">
               {editingProduct ? 'Editar Producto Comercial' : 'Alta de Nuevo Producto'}
             </h3>
 
-            <form onSubmit={handleSaveProduct} className="space-y-3">
+            <form onSubmit={handleSaveProduct} className="space-y-3 flex-1 overflow-y-auto pr-1">
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">Nombre del Producto</label>
                 <input
@@ -427,7 +453,7 @@ export const InventoryPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Código de Barras</label>
                   <input
@@ -460,16 +486,15 @@ export const InventoryPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Precio Compra / Costo ({currency})</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Precio Compra (Opcional) ({currency})</label>
                   <input
                     type="number"
                     step="0.01"
-                    required
                     value={costPrice}
                     onChange={(e) => setCostPrice(e.target.value)}
-                    placeholder="0.00"
+                    placeholder="Opcional"
                     className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-800 outline-none"
                   />
                 </div>
@@ -487,7 +512,7 @@ export const InventoryPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Stock Actual</label>
                   <input
@@ -522,7 +547,7 @@ export const InventoryPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Proveedor</label>
                   <input
@@ -545,7 +570,7 @@ export const InventoryPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Ubicación Almacén</label>
                   <input

@@ -1,0 +1,9 @@
+{
+  "required_field": "This field is required",
+  "invalid_email": "Enter a valid email address",
+  "invalid_number": "Enter a valid numeric value",
+  "min_value": "Minimum allowed value is {{min}}",
+  "max_value": "Maximum allowed value is {{max}}",
+  "password_too_short": "Password must be at least 6 characters long",
+  "terms_required": "You must accept the terms of service to continue"
+}

@@ -34,13 +34,19 @@ async def import_products_csv(
         if not name:
             continue
         price = float(row.get("Precio") or row.get("price") or 0.0)
-        cost = float(row.get("Costo") or row.get("cost_price") or 0.0)
+        raw_cost = row.get("Costo") or row.get("cost_price")
+        cost = float(raw_cost) if raw_cost is not None and str(raw_cost).strip() != "" else None
         stock = float(row.get("Stock") or row.get("stock") or 0.0)
         barcode = row.get("CodigoBarras") or row.get("barcode") or None
         sku = row.get("SKU") or row.get("sku") or None
 
-        profit = price - cost
-        margin = ((price - cost) / price * 100) if price > 0 else 0.0
+        if cost is not None:
+            profit = price - cost
+            margin = ((price - cost) / price * 100) if price > 0 else 0.0
+        else:
+            profit = None
+            margin = None
+
 
         prod = ProductModel(
             id=f"prod_{uuid.uuid4().hex[:12]}",

@@ -1,0 +1,9 @@
+{
+  "title": "VENDIX AI Intelligent Assistant",
+  "subtitle": "Real-time commercial advisory, predictive sales analysis, and pricing optimization.",
+  "prompt_ph": "Ask a business question or request a recommendation...",
+  "send_btn": "Ask VENDIX AI",
+  "thinking": "Analyzing commercial metrics...",
+  "suggested_actions": "Suggested AI Actions",
+  "ai_language_note": "Artificial Intelligence will automatically respond in your selected language (English)."
+}

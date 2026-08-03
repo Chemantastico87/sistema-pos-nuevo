@@ -6,6 +6,9 @@ from app.core.database import get_db
 router = APIRouter(prefix="/health", tags=["System Health"])
 
 @router.get("/system")
+@router.get("/system/")
+@router.get("/status")
+@router.get("/status/")
 async def get_system_health(db: AsyncSession = Depends(get_db)):
     db_ok = True
     try:

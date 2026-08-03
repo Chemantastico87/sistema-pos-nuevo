@@ -1,0 +1,12 @@
+{
+  "title": "Financial Reports & Business Analytics",
+  "subtitle": "Sales reports by period, product profitability, tax summaries, and data export.",
+  "sales_report": "Sales Report",
+  "profit_report": "Margin & Profit Report",
+  "tax_report": "Tax / VAT Summary Report",
+  "export_excel": "Export Excel (.xlsx)",
+  "export_csv": "Export CSV (.csv)",
+  "export_pdf": "Export PDF Report",
+  "date_range": "Date Range",
+  "filter_btn": "Filter Report"
+}

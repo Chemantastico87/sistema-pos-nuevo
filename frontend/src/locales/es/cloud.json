@@ -1,0 +1,10 @@
+{
+  "title": "Respaldos Enterprise & VENDIX Cloud",
+  "subtitle": "Copias de seguridad cifradas en la nube, restauración puntual y sincronización multi-sucursal.",
+  "create_backup": "Crear Backup Ahora",
+  "restore_backup": "Restaurar Backup",
+  "backups_list": "Historial de Copias de Seguridad",
+  "storage_driver": "Motor de Almacenamiento",
+  "aes_encrypted": "Cifrado AES-256 Activo",
+  "checksum": "Suma de Comprobación Checksum"
+}

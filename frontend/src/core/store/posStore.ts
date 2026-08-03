@@ -5,6 +5,7 @@ export interface CartItem {
   product_name: string;
   quantity: number;
   unit_price: number;
+  tax_rate?: number;
 }
 
 interface POSState {
@@ -12,12 +13,16 @@ interface POSState {
   selectedCustomer: { id: string; name: string } | null;
   discount: number;
   paymentMethod: string;
+  searchQuery: string;
+  scanNotice: string | null;
   addToCart: (item: CartItem) => void;
   removeFromCart: (product_id: string) => void;
   updateQuantity: (product_id: string, quantity: number) => void;
   setCustomer: (customer: { id: string; name: string } | null) => void;
   setDiscount: (discount: number) => void;
   setPaymentMethod: (method: string) => void;
+  setSearchQuery: (query: string) => void;
+  setScanNotice: (notice: string | null) => void;
   clearCart: () => void;
 }
 
@@ -26,6 +31,8 @@ export const usePOSStore = create<POSState>((set) => ({
   selectedCustomer: null,
   discount: 0,
   paymentMethod: 'cash',
+  searchQuery: '',
+  scanNotice: null,
   addToCart: (item) =>
     set((state) => {
       const existingIndex = state.cart.findIndex((i) => i.product_id === item.product_id);
@@ -47,5 +54,7 @@ export const usePOSStore = create<POSState>((set) => ({
   setCustomer: (selectedCustomer) => set({ selectedCustomer }),
   setDiscount: (discount) => set({ discount }),
   setPaymentMethod: (paymentMethod) => set({ paymentMethod }),
-  clearCart: () => set({ cart: [], discount: 0, selectedCustomer: null }),
+  setSearchQuery: (searchQuery) => set({ searchQuery }),
+  setScanNotice: (scanNotice) => set({ scanNotice }),
+  clearCart: () => set({ cart: [], discount: 0, selectedCustomer: null, searchQuery: '' }),
 }));

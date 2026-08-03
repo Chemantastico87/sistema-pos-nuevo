@@ -1,0 +1,8 @@
+{
+  "welcome_subject": "Welcome to VENDIX POS! Your account is active",
+  "welcome_body": "Thank you for registering your company. Start managing your sales and inventory right away.",
+  "reset_subject": "Instructions to reset your VENDIX POS password",
+  "reset_body": "Click the following link to create your new secure password.",
+  "invoice_subject": "Invoice / Sales Receipt {{invoice_number}}",
+  "invoice_body": "Attached you will find your PDF invoice. Thank you for your business."
+}

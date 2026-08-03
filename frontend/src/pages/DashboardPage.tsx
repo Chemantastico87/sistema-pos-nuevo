@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, TrendingUp, ShoppingBag, Users, AlertTriangle, Lock, Unlock, CheckCircle2, Zap, ArrowUpRight, Activity, Sparkles, MessageSquare, ArrowRight } from 'lucide-react';
 import { apiClient } from '../core/services/apiClient';
 import { useAuthStore } from '../core/store/authStore';
+import { useTranslation } from '../core/store/languageStore';
 
 export const DashboardPage: React.FC = () => {
   const [sales, setSales] = useState<any[]>([]);
@@ -10,6 +11,7 @@ export const DashboardPage: React.FC = () => {
   const [aiInsights, setAiInsights] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const { t } = useTranslation();
   const currency = useAuthStore((s) => s.user?.currency || 'EUR');
   const user = useAuthStore((s) => s.user);
 
@@ -50,15 +52,15 @@ export const DashboardPage: React.FC = () => {
         <div className="space-y-1 relative z-10">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[10px] font-black tracking-widest uppercase">
-              VENDIX Insights Business Hub
+              {t('title')}
             </span>
             <span className="text-xs text-slate-400">| Plataforma TPV v5.0</span>
           </div>
           <h1 className="text-2xl font-black text-white tracking-wide">
-            Buenos días, {user?.full_name || 'Administrador'}.
+            {t('welcome_greeting')}, {user?.full_name || 'Administrador'}.
           </h1>
           <p className="text-xs text-slate-300">
-            Resumen inteligente en tiempo real de ventas, margen de beneficio, estado de caja y recomendaciones automáticas.
+            {t('subtitle')}
           </p>
         </div>
 
@@ -67,7 +69,7 @@ export const DashboardPage: React.FC = () => {
             currentCash ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
           }`}>
             {currentCash ? <Unlock className="w-4 h-4 text-emerald-400" /> : <Lock className="w-4 h-4 text-rose-400" />}
-            <span>{currentCash ? 'Caja Abierta' : 'Caja Cerrada'}</span>
+            <span>{currentCash ? t('cash_open') : t('cash_closed')}</span>
           </div>
         </div>
       </div>
@@ -95,17 +97,29 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
+      {/* BLOQUE DE AVISO PRODUCTOS SIN COSTE REGISTRADO */}
+      {inventoryKpis?.products_without_cost_count > 0 && (
+        <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-3.5 text-amber-900 flex items-center justify-between text-xs font-medium shadow-xs">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              {t('missing_cost_warning', { count: inventoryKpis.products_without_cost_count })}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* KPI GRID DE 4 TARJETAS PRINCIPALES */}
       <div className="grid grid-cols-4 gap-4">
         <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-400 block uppercase">Ventas Hoy</span>
+            <span className="text-xs font-bold text-slate-400 block uppercase">{t('sales_today')}</span>
             <span className="text-2xl font-black text-slate-900 mt-1 block">
               {currency} {salesToday.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
             <span className="text-[11px] font-bold text-emerald-600 mt-1 flex items-center gap-1">
               <ArrowUpRight className="w-3.5 h-3.5" />
-              <span>+18% vs semana pasada</span>
+              <span>+18% {t('vs_last_week')}</span>
             </span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
@@ -115,11 +129,11 @@ export const DashboardPage: React.FC = () => {
 
         <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-400 block uppercase">Margen Hoy</span>
+            <span className="text-xs font-bold text-slate-400 block uppercase">{t('margin_today')}</span>
             <span className="text-2xl font-black text-indigo-600 mt-1 block">
               42 %
             </span>
-            <span className="text-[11px] font-bold text-emerald-600 mt-1 block">Excelente rentabilidad</span>
+            <span className="text-[11px] font-bold text-emerald-600 mt-1 block">{t('excellent_profitability')}</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
             <TrendingUp className="w-6 h-6" />
@@ -128,11 +142,11 @@ export const DashboardPage: React.FC = () => {
 
         <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-400 block uppercase">Beneficio Estimado</span>
+            <span className="text-xs font-bold text-slate-400 block uppercase">{t('estimated_profit')}</span>
             <span className="text-2xl font-black text-emerald-600 mt-1 block">
               {currency} {estimatedProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
-            <span className="text-[11px] font-bold text-emerald-600 mt-1 block">Neto estimado</span>
+            <span className="text-[11px] font-bold text-emerald-600 mt-1 block">{t('estimated_net')}</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
             <Zap className="w-6 h-6" />
@@ -141,11 +155,11 @@ export const DashboardPage: React.FC = () => {
 
         <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-400 block uppercase">Stock Crítico</span>
+            <span className="text-xs font-bold text-slate-400 block uppercase">{t('critical_stock')}</span>
             <span className="text-2xl font-black text-amber-600 mt-1 block">
               {inventoryKpis?.low_stock_count || 3}
             </span>
-            <span className="text-[11px] font-bold text-amber-600 mt-1 block">Productos a reponer</span>
+            <span className="text-[11px] font-bold text-amber-600 mt-1 block">{t('products_to_replenish')}</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
             <AlertTriangle className="w-6 h-6" />
@@ -156,8 +170,8 @@ export const DashboardPage: React.FC = () => {
       {/* CUMPLIMIENTO DEL OBJETIVO DIARIO */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-3">
         <div className="flex items-center justify-between text-xs font-bold">
-          <span className="text-slate-900">Objetivo Diario de Ventas ({currency} {targetGoal})</span>
-          <span className="text-indigo-600 font-mono font-black">{goalPercentage}% completado</span>
+          <span className="text-slate-900">{t('daily_goal')} ({currency} {targetGoal})</span>
+          <span className="text-indigo-600 font-mono font-black">{goalPercentage}% {t('completed')}</span>
         </div>
         <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
           <div
@@ -173,7 +187,7 @@ export const DashboardPage: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-indigo-600" />
-            <span>Últimas Ventas TPV</span>
+            <span>{t('latest_sales')}</span>
           </h2>
 
           <div className="divide-y divide-slate-100 text-xs">
@@ -189,12 +203,12 @@ export const DashboardPage: React.FC = () => {
                   <span className="font-black text-slate-900 text-sm block">
                     {currency} {parseFloat(s.total).toFixed(2)}
                   </span>
-                  <span className="text-[10px] text-emerald-600 font-bold">Completada</span>
+                  <span className="text-[10px] text-emerald-600 font-bold">{t('completed')}</span>
                 </div>
               </div>
             ))}
             {sales.length === 0 && (
-              <p className="text-center py-6 text-slate-400">No hay ventas registradas hoy en el TPV.</p>
+              <p className="text-center py-6 text-slate-400">{t('no_sales_today')}</p>
             )}
           </div>
         </div>
@@ -202,21 +216,21 @@ export const DashboardPage: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-purple-600" />
-            <span>Centro de Recomendaciones VENDIX</span>
+            <span>{t('recommendations_hub')}</span>
           </h2>
 
           <div className="space-y-3 text-xs">
             <div className="p-3.5 bg-indigo-50/60 border border-indigo-100 rounded-xl space-y-1">
-              <span className="font-bold text-indigo-900 block">Optimización de Rotación</span>
+              <span className="font-bold text-indigo-900 block">{t('rotation_optimization')}</span>
               <p className="text-indigo-700 leading-relaxed">
-                Los viernes entre las 18:00 y 20:00 h concentran el 34% de tus ventas semanales. Asegura stock suficiente en caja.
+                {t('rotation_recommendation')}
               </p>
             </div>
 
             <div className="p-3.5 bg-emerald-50/60 border border-emerald-100 rounded-xl space-y-1">
-              <span className="font-bold text-emerald-900 block">Fidelización Activa</span>
+              <span className="font-bold text-emerald-900 block">{t('active_loyalty')}</span>
               <p className="text-emerald-700 leading-relaxed">
-                El 15% de tus clientes recurrentes ha superado 30 días sin comprar. Aplica un cupón promocional desde VENDIX AI.
+                {t('loyalty_recommendation')}
               </p>
             </div>
           </div>

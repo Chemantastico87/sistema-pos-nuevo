@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Star, ShoppingCart, Trash2, Plus, Minus, CreditCard, DollarSign, 
   User, Printer, CheckCircle2, QrCode, Grid, Layers, RefreshCw, Search,
-  Coffee, Cookie, Milk, ShoppingBag, Sparkles, Box, PlusCircle, Package, Receipt, Check, Edit3
+  Coffee, Cookie, Milk, ShoppingBag, Sparkles, Box, PlusCircle, Package, Receipt, Check, Edit3, AlertCircle
 } from 'lucide-react';
+
 import { usePOSStore } from '../../core/store/posStore';
 import { useSettingsStore } from '../../core/store/settingsStore';
 import { useCashStore } from '../../core/store/cashStore';
@@ -22,36 +23,50 @@ const STARTER_PRODUCTS: LocalProduct[] = [
   { id: 'prod_8', company_id: 'c1', name: 'Pan de Molde Blanco', price: 2.90, cost_price: 1.90, stock: 45, category_id: 'Snacks' },
 ];
 
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../../core/store/languageStore';
+import { SmartProductDiscoveryModal } from '../products/SmartProductDiscoveryModal';
+
 export const POSContainer: React.FC = () => {
-  const { cart, selectedCustomer, discount, paymentMethod, addToCart, removeFromCart, updateQuantity, setDiscount, setPaymentMethod, clearCart } = usePOSStore();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { cart, selectedCustomer, discount, paymentMethod, searchQuery, setSearchQuery, addToCart, removeFromCart, updateQuantity, setDiscount, setPaymentMethod, clearCart } = usePOSStore();
   const { formatMoney, currencySymbol, taxRate } = useSettingsStore();
   const { addSaleRecord } = useCashStore();
 
   const [products, setProducts] = useState<LocalProduct[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [customerSearch, setCustomerSearch] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastSaleReceipt, setLastSaleReceipt] = useState<any | null>(null);
 
+  // VENDIX Smart Product Discovery Modal State
+  const [showSmartDiscovery, setShowSmartDiscovery] = useState(false);
+  const [discoveryBarcode, setDiscoveryBarcode] = useState('');
+
   // Modales
   const [showAddModal, setShowAddModal] = useState(false);
   const [newProductName, setNewProductName] = useState('');
+  const [newProductBrand, setNewProductBrand] = useState('');
   const [newProductPrice, setNewProductPrice] = useState('');
+  const [newProductCost, setNewProductCost] = useState('');
   const [newProductStock, setNewProductStock] = useState('50');
+  const [newProductBarcode, setNewProductBarcode] = useState('');
+
 
   const [editingProd, setEditingProd] = useState<LocalProduct | null>(null);
   const [deletingProd, setDeletingProd] = useState<LocalProduct | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  const generateRandomBarcode = () => {
+    const randomEan = '770' + Math.floor(100000000 + Math.random() * 900000000).toString();
+    setNewProductBarcode(randomEan);
+  };
+
   useEffect(() => {
     const initProducts = async () => {
-      let localProds = await db.products.toArray();
-      if (localProds.length === 0) {
-        await db.products.bulkAdd(STARTER_PRODUCTS);
-        localProds = STARTER_PRODUCTS;
-      }
+      const localProds = await db.products.toArray();
       setProducts(localProds);
     };
     initProducts();
@@ -61,22 +76,32 @@ export const POSContainer: React.FC = () => {
     e.preventDefault();
     if (!newProductName || !newProductPrice) return;
 
+    const barcodeVal = newProductBarcode.trim() || '770' + Math.floor(100000000 + Math.random() * 900000000).toString();
+    const parsedCost = newProductCost.trim() !== '' ? parseFloat(newProductCost) : null;
+
     const newProd: LocalProduct = {
       id: `prod_${Date.now()}`,
       company_id: 'comp_demo',
       name: newProductName,
+      brand: newProductBrand || 'Comercial',
       price: parseFloat(newProductPrice) || 0,
-      cost_price: Math.round((parseFloat(newProductPrice) || 0) * 0.7),
+      cost_price: parsedCost,
       stock: parseFloat(newProductStock) || 0,
+      barcode: barcodeVal,
+      sku: barcodeVal,
       category_id: selectedCategory !== 'Todos' ? selectedCategory : 'General',
     };
 
     await db.products.add(newProd);
     setProducts((prev) => [...prev, newProd]);
     setNewProductName('');
+    setNewProductBrand('');
     setNewProductPrice('');
+    setNewProductCost('');
+    setNewProductBarcode('');
     setShowAddModal(false);
   };
+
 
   const handleSaveEditProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,6 +200,104 @@ export const POSContainer: React.FC = () => {
     }
   };
 
+  const [scanNotice, setScanNotice] = useState<string | null>(null);
+
+  const scanBufferRef = useRef('');
+  const lastKeyTimeRef = useRef(0);
+
+  const playScanBeep = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, ctx.currentTime);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch (e) {
+      // Audio fallback
+    }
+  };
+
+  const handleScanBarcode = (rawCode: string): boolean => {
+    const code = rawCode.trim();
+    if (!code) return false;
+
+    const matched = products.find(
+      (p) =>
+        (p.barcode && p.barcode.toLowerCase() === code.toLowerCase()) ||
+        (p.sku && p.sku.toLowerCase() === code.toLowerCase()) ||
+        p.id.toLowerCase() === code.toLowerCase()
+    );
+
+    if (matched) {
+      playScanBeep();
+      addToCart({
+        product_id: matched.id,
+        product_name: matched.name,
+        unit_price: matched.price,
+        quantity: 1,
+        tax_rate: matched.vat_rate || 21,
+      });
+      setScanNotice(`⚡ ¡Producto escaneado y agregado!: ${matched.name} (${formatMoney(matched.price)})`);
+      setTimeout(() => setScanNotice(null), 3500);
+      setSearchQuery('');
+      return true;
+    } else if (code.length >= 6 && /^[a-zA-Z0-9_-]+$/.test(code)) {
+      playScanBeep();
+      setDiscoveryBarcode(code);
+      setShowSmartDiscovery(true);
+      setSearchQuery('');
+      return true;
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (showSmartDiscovery || showAddModal || editingProd || deletingProd || lastSaleReceipt) {
+        return;
+      }
+
+      const activeEl = document.activeElement;
+      const isInputFocused = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+
+      const now = Date.now();
+      const timeDiff = now - lastKeyTimeRef.current;
+      lastKeyTimeRef.current = now;
+
+      if (e.key === 'Enter') {
+        const buffer = scanBufferRef.current.trim();
+        const currentSearch = searchQuery.trim();
+        const codeToTest = buffer || (isInputFocused ? currentSearch : '');
+
+        if (codeToTest.length >= 3) {
+          const handled = handleScanBarcode(codeToTest);
+          if (handled) {
+            e.preventDefault();
+            e.stopPropagation();
+            scanBufferRef.current = '';
+            return;
+          }
+        }
+        scanBufferRef.current = '';
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (timeDiff > 80) {
+          scanBufferRef.current = e.key;
+        } else {
+          scanBufferRef.current += e.key;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown, true);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown, true);
+  }, [products, searchQuery, showSmartDiscovery, showAddModal, editingProd, deletingProd, lastSaleReceipt]);
+
   // Atajos F1-F8 + Enter 100% Funcionales
   useKeyboardShortcuts({
     onF1Search: () => {
@@ -182,14 +305,17 @@ export const POSContainer: React.FC = () => {
       else searchInputRef.current?.focus();
     },
     onF2Customer: () => searchInputRef.current?.focus(),
-    onF3Scan: () => alert('Modo escáner de código de barras listo. Apunte su lector.'),
+    onF3Scan: () => {
+      const code = prompt('Ingresa o escanea el código de barras manualmente:');
+      if (code) handleScanBarcode(code);
+    },
     onF4Customer: () => handleCheckout(),
     onF5Suspend: () => clearCart(),
     onF7Discount: () => {
       const d = prompt(`Monto descuento (${currencySymbol}):`, discount.toString());
       if (d !== null) setDiscount(parseFloat(d) || 0);
     },
-    onF8Drawer: () => alert('Gaveta de dinero abierta automáticamente.'),
+    onF8Drawer: () => alert('Caja registradora abierta automáticamente.'),
     onEnterCheckout: () => handleCheckout(),
   });
 
@@ -202,7 +328,14 @@ export const POSContainer: React.FC = () => {
   });
 
   return (
-    <div className="h-[calc(100vh-5rem)] flex gap-5 overflow-hidden p-1">
+    <div className="h-[calc(100vh-5rem)] flex gap-5 overflow-hidden p-1 relative">
+      {/* Toast Notificación de Escaneo Exitoso */}
+      {scanNotice && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-6 py-3 rounded-2xl shadow-2xl font-extrabold text-sm flex items-center gap-3 animate-bounce">
+          <Sparkles className="w-5 h-5 text-amber-300" />
+          <span>{scanNotice}</span>
+        </div>
+      )}
       {/* Modal Ticket de Venta Exitoso */}
       {lastSaleReceipt && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
@@ -250,54 +383,157 @@ export const POSContainer: React.FC = () => {
         </div>
       )}
 
+      {/* VENDIX Smart Product Discovery Modal Engine */}
+      {showSmartDiscovery && (
+        <SmartProductDiscoveryModal
+          initialBarcode={discoveryBarcode}
+          onClose={() => {
+            setShowSmartDiscovery(false);
+            setDiscoveryBarcode('');
+          }}
+          onProductCreated={(newProd) => {
+            setProducts((prev) => [...prev, newProd]);
+            addToCart({
+              product_id: newProd.id,
+              product_name: newProd.name,
+              unit_price: newProd.price,
+              quantity: 1,
+              tax_rate: newProd.vat_rate || 21,
+            });
+          }}
+        />
+      )}
+
       {/* Modal Crear Nuevo Producto */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 w-full max-w-md max-h-[90vh] flex flex-col space-y-4 shadow-2xl overflow-y-auto my-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
                 <PlusCircle className="w-5 h-5 text-indigo-600" /> Crear Producto
               </h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 font-bold hover:text-slate-600">✕</button>
+              <button onClick={() => setShowAddModal(false)} className="text-slate-400 font-bold hover:text-slate-600 cursor-pointer">✕</button>
             </div>
             <form onSubmit={handleAddProduct} className="space-y-3 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Nombre</label>
+                <label className="font-bold text-slate-700 block mb-1">{t('product_name')}</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ej. Café Capuchino"
+                  placeholder="Ej. Café Capuchino 300ml"
                   value={newProductName}
                   onChange={(e) => setNewProductName(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none font-medium"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+
+              {/* CAMPO DE CÓDIGO DE BARRAS CON ESCÁNER & GENERADOR EAN-13 */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                    <QrCode className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>{t('barcode_label')}</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={generateRandomBarcode}
+                    className="text-[10px] text-indigo-600 font-extrabold hover:underline"
+                  >
+                    ⚡ {t('generate_barcode')}
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder={t('barcode_ph')}
+                    value={newProductBarcode}
+                    onChange={(e) => setNewProductBarcode(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-20 py-2 text-slate-800 outline-none font-mono font-bold"
+                  />
+                  <div className="absolute right-1 top-1 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => alert(t('scan_mode_active'))}
+                      className="px-2 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg text-[10px] font-bold hover:bg-indigo-100 flex items-center gap-1 cursor-pointer"
+                      title="Apunte su pistola lectora de código de barras"
+                    >
+                      <QrCode className="w-3 h-3" /> {t('scan_btn')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Precio Venta ({currencySymbol})</label>
+                  <label className="font-bold text-slate-700 block mb-1">Marca</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Comercial"
+                    value={newProductBrand}
+                    onChange={(e) => setNewProductBrand(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Categoría</label>
+                  <input
+                    type="text"
+                    disabled
+                    value={selectedCategory !== 'Todos' ? selectedCategory : 'General'}
+                    className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-600 outline-none font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Precio de venta * ({currencySymbol})</label>
                   <input
                     type="number"
                     step="0.01"
                     required
-                    placeholder="3.50"
+                    placeholder="3.50 *"
                     value={newProductPrice}
                     onChange={(e) => setNewProductPrice(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none font-bold"
+                    className="w-full bg-slate-50 border-2 border-indigo-500 rounded-xl px-3 py-2 text-slate-800 font-extrabold outline-none"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Stock Inicial</label>
+                  <label className="font-bold text-slate-700 block mb-1">Precio de compra (Opcional)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Opcional"
+                    value={newProductCost}
+                    onChange={(e) => setNewProductCost(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 font-bold outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Stock inicial (Opcional)</label>
                   <input
                     type="number"
                     value={newProductStock}
                     onChange={(e) => setNewProductStock(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-800 outline-none font-bold"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none font-bold"
                   />
                 </div>
               </div>
-              <div className="pt-2 flex gap-3">
-                <button type="button" onClick={() => setShowAddModal(false)} className="w-1/2 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600">Cancelar</button>
-                <button type="submit" className="w-1/2 py-2.5 rounded-xl bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30">Guardar</button>
+
+              {newProductCost.trim() === '' && (
+                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] flex items-center gap-1.5 font-medium">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Este producto aún no tiene precio de compra. Puedes añadirlo más adelante para obtener estadísticas de beneficio.</span>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setShowAddModal(false)} className="w-1/2 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 cursor-pointer">
+                  {t('cancel')}
+                </button>
+                <button type="submit" className="w-1/2 py-2.5 rounded-xl bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30 hover:bg-indigo-700 cursor-pointer">
+                  {t('save')}
+                </button>
               </div>
             </form>
           </div>
@@ -387,13 +623,20 @@ export const POSContainer: React.FC = () => {
                 onClick={() => setSelectedCategory('Todos')}
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-600/30"
               >
-                Todos los productos
+                {t('all_products')}
               </button>
               <button
-                onClick={() => setShowAddModal(true)}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 flex items-center gap-1.5 transition-all shadow-xs"
+                onClick={() => setShowSmartDiscovery(true)}
+                className="px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white hover:from-indigo-500 hover:to-purple-500 flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/30 cursor-pointer"
               >
-                <PlusCircle className="w-3.5 h-3.5" /> + Agregar Producto
+                <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" /> {t('add_product')} <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md font-mono font-black">&lt;10s</span>
+              </button>
+
+              <button
+                onClick={() => navigate('/sales')}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              >
+                <Receipt className="w-3.5 h-3.5" /> {t('daily_sales_btn')}
               </button>
             </div>
 
@@ -406,7 +649,7 @@ export const POSContainer: React.FC = () => {
                 className="bg-white border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer hover:bg-slate-50"
               >
                 <QrCode className="w-3.5 h-3.5 text-slate-500" />
-                <span>Escanear</span>
+                <span>{t('scan_btn')}</span>
                 <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500 border border-slate-200">F3</span>
               </div>
             </div>
@@ -415,12 +658,12 @@ export const POSContainer: React.FC = () => {
           {/* Category Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             {[
-              { id: 'Todos', label: 'Todos', icon: Layers },
-              { id: 'Bebidas', label: 'Bebidas', icon: Coffee },
-              { id: 'Snacks', label: 'Snacks', icon: Cookie },
-              { id: 'Lácteos', label: 'Lácteos', icon: Milk },
-              { id: 'Abarrotes', label: 'Abarrotes', icon: ShoppingBag },
-              { id: 'Limpieza', label: 'Limpieza', icon: Box },
+              { id: 'Todos', label: t('cat_all'), icon: Layers },
+              { id: 'Bebidas', label: t('cat_drinks'), icon: Coffee },
+              { id: 'Snacks', label: t('cat_snacks'), icon: Cookie },
+              { id: 'Lácteos', label: t('cat_dairy'), icon: Milk },
+              { id: 'Abarrotes', label: t('cat_groceries'), icon: ShoppingBag },
+              { id: 'Limpieza', label: t('cat_cleaning'), icon: Box },
             ].map((cat) => {
               const Icon = cat.icon;
               const isSelected = selectedCategory === cat.id;
@@ -504,16 +747,16 @@ export const POSContainer: React.FC = () => {
         {/* Action Toolbar con Atajos Interactivos F1-F8 + Enter */}
         <div className="bg-white border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between text-xs font-semibold text-slate-700 shadow-xs">
           <div className="flex items-center gap-2">
-            <button onClick={() => clearCart()} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
-              <span>Nueva Venta</span>
+            <button onClick={() => clearCart()} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer">
+              <span>{t('new_sale')}</span>
               <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500">F1</span>
             </button>
-            <button onClick={() => searchInputRef.current?.focus()} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
-              <span>Buscar Producto</span>
+            <button onClick={() => searchInputRef.current?.focus()} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer">
+              <span>{t('search_product')}</span>
               <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500">F2</span>
             </button>
-            <button onClick={() => alert('Modo escáner activo. Apunte su lector de código de barras.')} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
-              <span>Escanear</span>
+            <button onClick={() => alert('Modo escáner activo. Apunte su lector de código de barras.')} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer">
+              <span>{t('scan')}</span>
               <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500">F3</span>
             </button>
           </div>
@@ -521,12 +764,12 @@ export const POSContainer: React.FC = () => {
             <button onClick={() => {
               const d = prompt(`Monto descuento (${currencySymbol}):`, discount.toString());
               if (d !== null) setDiscount(parseFloat(d) || 0);
-            }} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
-              <span>Descuento</span>
+            }} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer">
+              <span>{t('discount')}</span>
               <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500">F7</span>
             </button>
-            <button onClick={() => alert('Gaveta de dinero abierta automáticamente.')} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5">
-              <span>Abrir Gaveta</span>
+            <button onClick={() => alert('Caja registradora abierta automáticamente.')} className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer">
+              <span>{t('open_register')}</span>
               <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-500">F8</span>
             </button>
           </div>
@@ -537,7 +780,7 @@ export const POSContainer: React.FC = () => {
       <div className="w-[360px] bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm shrink-0">
         <div className="space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-            <h2 className="font-extrabold text-base text-slate-900">Ticket de venta</h2>
+            <h2 className="font-extrabold text-base text-slate-900">{t('cart_title')}</h2>
             <div className="flex items-center gap-2">
               <button onClick={() => clearCart()} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors" title="Vaciar Ticket">
                 <Trash2 className="w-4 h-4" />
@@ -546,15 +789,15 @@ export const POSContainer: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-12 text-[11px] font-bold text-slate-400 uppercase px-1">
-            <span className="col-span-5">Producto</span>
+            <span className="col-span-5">{t('product_name')}</span>
             <span className="col-span-2 text-center">Cant.</span>
-            <span className="col-span-2 text-right">Precio</span>
-            <span className="col-span-3 text-right">Total</span>
+            <span className="col-span-2 text-right">{t('price')}</span>
+            <span className="col-span-3 text-right">{t('total')}</span>
           </div>
 
           <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
             {cart.length === 0 ? (
-              <p className="text-center text-slate-400 py-10 text-xs">No hay productos en el ticket</p>
+              <p className="text-center text-slate-400 py-10 text-xs">{t('empty_cart')}</p>
             ) : (
               cart.map((item) => (
                 <div key={item.product_id} className="grid grid-cols-12 items-center text-xs text-slate-800 py-1.5 border-b border-slate-100 hover:bg-slate-50 rounded-lg px-1">
@@ -587,19 +830,19 @@ export const POSContainer: React.FC = () => {
         <div className="space-y-3 pt-3 border-t border-slate-200">
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between text-slate-500 font-medium">
-              <span>Subtotal</span>
+              <span>{t('subtotal')}</span>
               <span className="font-semibold text-slate-800">{formatMoney(subtotal)}</span>
             </div>
             <div className="flex justify-between text-slate-500 font-medium">
-              <span>Descuento</span>
+              <span>{t('discount')}</span>
               <span className="font-semibold text-slate-800">{formatMoney(discount)}</span>
             </div>
             <div className="flex justify-between text-slate-500 font-medium">
-              <span>Impuestos ({taxRate}%)</span>
+              <span>{t('taxes')} ({taxRate}%)</span>
               <span className="font-semibold text-slate-800">{formatMoney(tax)}</span>
             </div>
             <div className="flex justify-between items-baseline pt-2 border-t border-slate-200">
-              <span className="font-extrabold text-sm text-slate-900">TOTAL</span>
+              <span className="font-extrabold text-sm text-slate-900">{t('total')}</span>
               <span className="font-black text-2xl text-indigo-600">{formatMoney(total)}</span>
             </div>
           </div>
@@ -613,7 +856,7 @@ export const POSContainer: React.FC = () => {
                   : 'bg-emerald-500 text-white hover:bg-emerald-600'
               }`}
             >
-              <span className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" /> Efectivo</span>
+              <span className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" /> {t('cash_pay')}</span>
               <span className="text-[10px] opacity-80">F1</span>
             </button>
 
@@ -625,7 +868,7 @@ export const POSContainer: React.FC = () => {
                   : 'bg-blue-500 text-white hover:bg-blue-600'
               }`}
             >
-              <span className="flex items-center gap-1"><CreditCard className="w-3.5 h-3.5" /> Tarjeta</span>
+              <span className="flex items-center gap-1"><CreditCard className="w-3.5 h-3.5" /> {t('card_pay')}</span>
               <span className="text-[10px] opacity-80">F2</span>
             </button>
 
@@ -637,7 +880,7 @@ export const POSContainer: React.FC = () => {
                   : 'bg-indigo-600 text-white hover:bg-indigo-700'
               }`}
             >
-              <span className="flex items-center gap-1"><Layers className="w-3.5 h-3.5" /> Mixto</span>
+              <span className="flex items-center gap-1"><Layers className="w-3.5 h-3.5" /> {t('mixed_pay')}</span>
               <span className="text-[10px] opacity-80">F3</span>
             </button>
           </div>
@@ -645,9 +888,9 @@ export const POSContainer: React.FC = () => {
           <button
             onClick={handleCheckout}
             disabled={cart.length === 0 || isProcessing}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white font-extrabold text-base shadow-lg shadow-indigo-600/30 hover:opacity-95 active:scale-98 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white font-extrabold text-base shadow-lg shadow-indigo-600/30 hover:opacity-95 active:scale-98 transition-all flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
           >
-            <span>{isProcessing ? 'Procesando...' : 'Cobrar'}</span>
+            <span>{isProcessing ? '...' : t('checkout_btn')}</span>
             <span className="px-2 py-0.5 rounded bg-white/20 text-xs font-bold">Enter</span>
           </button>
         </div>

@@ -1,0 +1,12 @@
+{
+  "title": "Relatórios Financeiros & Análise Comercial",
+  "subtitle": "Relatórios de vendas por período, rentabilidade por produto, resumos de impostos e exportação.",
+  "sales_report": "Relatório de Vendas",
+  "profit_report": "Relatório de Margem & Lucro",
+  "tax_report": "Relatório de Impostos / IVA",
+  "export_excel": "Exportar Excel (.xlsx)",
+  "export_csv": "Exportar CSV (.csv)",
+  "export_pdf": "Exportar Relatório PDF",
+  "date_range": "Intervalo de Datas",
+  "filter_btn": "Filtrar Relatório"
+}

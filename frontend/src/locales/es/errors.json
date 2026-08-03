@@ -1,0 +1,16 @@
+{
+  "http_401": "Sesión expirada o credenciales no válidas. Por favor inicie sesión nuevamente.",
+  "http_403": "No tiene permisos suficientes para realizar esta acción.",
+  "http_404": "El recurso solicitado no fue encontrado.",
+  "http_409": "Existe un conflicto con los datos ingresados (ej. código o email duplicado).",
+  "http_422": "Los datos enviados contienen errores de formato o validación.",
+  "http_500": "Error interno del servidor. Nuestro equipo técnico ha sido notificado.",
+  "network_error": "Error de conexión con el servidor. Verifique su red de internet.",
+  "user_not_found": "Usuario o correo electrónico no encontrado.",
+  "invalid_credentials": "La contraseña ingresada es incorrecta.",
+  "company_exists": "Ya existe una empresa registrada con ese correo corporativo.",
+  "product_not_found": "El producto especificado no existe en la base de datos.",
+  "out_of_stock": "El producto no dispone de stock suficiente para completar la operación.",
+  "cash_register_closed": "La caja registradora se encuentra cerrada. Debe abrir turno para cobrar.",
+  "cash_register_already_open": "La caja registradora ya se encuentra abierta para este usuario."
+}

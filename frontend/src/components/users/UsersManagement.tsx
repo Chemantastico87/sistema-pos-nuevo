@@ -10,7 +10,7 @@ export interface UserPermission {
 const ALL_PERMISSIONS: UserPermission[] = [
   { id: 'can_change_price', name: 'Cambiar Precios en POS', description: 'Permite modificar el precio de venta unitario durante el cobro.' },
   { id: 'can_delete_sale', name: 'Anular / Eliminar Ventas', description: 'Permite cancelar y anular tickets procesados en el sistema.' },
-  { id: 'can_open_cash_register', name: 'Abrir Gaveta de Dinero (F8)', description: 'Permite abrir la caja registradora sin realizar una venta.' },
+  { id: 'can_open_cash_register', name: 'Abrir Caja (F8)', description: 'Permite abrir la caja registradora sin realizar una venta.' },
   { id: 'can_view_profit', name: 'Ver Utilidades & Ganancias', description: 'Permite consultar el margen de costo vs precio en reportes.' },
   { id: 'can_manage_inventory', name: 'Ajustar Inventarios', description: 'Permite cambiar cantidades de stock manualmente.' },
   { id: 'can_manage_users', name: 'Administrar Usuarios & Permisos', description: 'Permite crear, modificar permisos y eliminar usuarios.' },
