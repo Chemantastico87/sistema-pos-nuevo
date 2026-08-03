@@ -53,6 +53,20 @@ export const useAuthStore = create<AuthState>((set) => {
         localStorage.setItem('refresh_token', refreshToken);
       }
       set({ user, token, refreshToken });
+
+      // Sincronización asíncrona de la sesión en IndexedDB (DexieDB) para modo offline real
+      import('../db/offlineAuthService').then(({ saveSyncedCompanySession }) => {
+        saveSyncedCompanySession({
+          user_id: user.id,
+          company_id: user.company_id,
+          company_name: user.company_name,
+          email: (user as any).email || 'admin@vendix.com',
+          role: user.role,
+          full_name: user.full_name,
+          currency: user.currency,
+          plan: user.plan
+        }).catch(() => {});
+      }).catch(() => {});
     },
     setOnboardingCompleted: (completed) => {
       set((state) => {

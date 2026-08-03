@@ -8,6 +8,7 @@ import {
 import { useAuthStore } from '../../core/store/authStore';
 import { useTranslation } from '../../core/store/languageStore';
 import { LanguageSelector } from '../common/LanguageSelector';
+import { VendixLogo } from '../common/VendixLogo';
 
 export const Sidebar: React.FC = () => {
   const user = useAuthStore((s) => s.user);
@@ -40,26 +41,9 @@ export const Sidebar: React.FC = () => {
   return (
     <aside className="w-64 bg-slate-950 text-slate-300 flex flex-col justify-between p-4 shadow-2xl z-20 shrink-0 select-none border-r border-slate-800/80 font-sans">
       <div className="space-y-6">
-        {/* LOGOTIPO OFICIAL VENDIX: MONOGRAMA GEOMÉTRICO "V" TICKET (SIN RAYO) */}
+        {/* LOGOTIPO OFICIAL VENDIX */}
         <div className="space-y-3 px-1">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-emerald-500 p-0.5 shadow-lg shadow-indigo-500/30 relative">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center relative">
-                <svg className="w-6 h-6 text-indigo-400 fill-current" viewBox="0 0 24 24">
-                  <path d="M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1.6.8L16.5 18l-3.5 2.5a1 1 0 0 1-1.2 0L8.3 18l-2.9 2.8A1 1 0 0 1 3 20V4a1 1 0 0 1 1-1zm3 3v10.5l2-1.9a1 1 0 0 1 1.3 0l2.7 1.9 2.7-1.9a1 1 0 0 1 1.3 0l2 1.9V6H7zm2 3h6v2H9V9zm0 4h4v2H9v-2z" />
-                </svg>
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h1 className="font-black text-xl text-white tracking-widest font-heading">VENDIX</h1>
-                <span className="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[9px] font-black tracking-widest uppercase shadow-xs">
-                  PRO
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 font-semibold tracking-wide">Business POS v5.0</p>
-            </div>
-          </div>
+          <VendixLogo size="md" badgeText="SaaS PRO" />
 
           <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between text-xs font-medium text-slate-300">
             <span className="font-bold text-slate-200 truncate">{user?.company_name || 'Mi Empresa POS'}</span>

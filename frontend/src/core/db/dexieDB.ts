@@ -65,21 +65,36 @@ export interface SyncQueueItem {
   status: 'pending' | 'syncing' | 'error';
 }
 
+export interface SyncedCompany {
+  company_id: string;
+  company_name: string;
+  user_id: string;
+  email: string;
+  role: string;
+  full_name: string;
+  currency: string;
+  plan: string;
+  offline_token: string;
+  synced_at: number;
+}
+
 export class POSDatabase extends Dexie {
   products!: Table<LocalProduct>;
   products_cache!: Table<DiscoveredProductCache>;
   cost_history!: Table<CostHistoryRecord>;
   customers!: Table<LocalCustomer>;
   sync_queue!: Table<SyncQueueItem>;
+  synced_companies!: Table<SyncedCompany>;
 
   constructor() {
     super('POS_SaaS_DexieDB');
-    this.version(3).stores({
+    this.version(4).stores({
       products: 'id, name, barcode, sku, company_id',
       products_cache: 'barcode, name, provider, cached_at',
       cost_history: '++id, product_id, date_time',
       customers: 'id, name, phone, company_id',
-      sync_queue: '++id, offline_sale_id, status, created_at'
+      sync_queue: '++id, offline_sale_id, status, created_at',
+      synced_companies: 'company_id, email, user_id, synced_at'
     });
   }
 }
