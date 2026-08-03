@@ -146,19 +146,5 @@ async def websocket_endpoint(websocket: WebSocket, company_id: str):
     except WebSocketDisconnect:
         ws_manager.disconnect(company_id, websocket)
 
-# 1. Registrar rutas con prefijo /api/v1
+# Registrar rutas principales API v1 de forma única y limpia
 app.include_router(api_v1_router)
-
-# 2. Registrar rutas adicionales con prefijos /api y raíz para evitar errores 405/404 en Vercel Serverless Rewrites
-api_root_router = FastAPI()
-all_domain_routers = [
-    auth_router, products_router, customers_router, pos_router, cash_router,
-    inventory_router, tickets_router, audit_router, superadmin_router,
-    subscriptions_router, health_router, errors_router, backups_router,
-    activity_router, notifications_router, import_export_router,
-    plans_router, coupons_router, vendix_ai_router
-]
-
-for r in all_domain_routers:
-    app.include_router(r, prefix="/api")
-    app.include_router(r)

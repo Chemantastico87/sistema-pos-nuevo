@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import or_, update, func
@@ -194,6 +195,11 @@ async def register_company(
         plan="Starter",
         subscription_status="trial"
     )
+
+@router.options("/login")
+@router.options("/login/")
+async def login_options():
+    return JSONResponse(content={"status": "ok"}, status_code=200)
 
 @router.post("/login", response_model=TokenResponse)
 @router.post("/login/", response_model=TokenResponse)
