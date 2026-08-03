@@ -41,6 +41,16 @@ async def ensure_db_initialized():
     if _db_initialized:
         return
     try:
+        # IMPORTAR TODOS LOS MODELOS PRIMERO para registrar sus tablas en Base.metadata
+        try:
+            import app.domains.auth.models  # noqa
+            import app.domains.cash.models  # noqa
+            import app.domains.products.models  # noqa
+            import app.domains.pos.models  # noqa
+            import app.domains.customers.models  # noqa
+        except Exception as imp_err:
+            print(f"Nota importación modelos: {imp_err}")
+
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
