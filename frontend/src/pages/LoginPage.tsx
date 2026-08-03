@@ -396,21 +396,23 @@ export const LoginPage: React.FC = () => {
           </button>
         </div>
 
-        {/* MENSAJES DE ERROR / ÉXITO CON BOTÓN DE FALLBACK OFFLINE */}
+        {/* MENSAJES DE ERROR / ÉXITO - MODO OFFLINE SOLO EN DESCONEXIÓN DE RED */}
         {error && (
           <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-semibold space-y-3">
             <div className="flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
               <span>{error}</span>
             </div>
-            <button
-              type="button"
-              onClick={() => handleOfflineFallbackLogin('admin')}
-              className="w-full py-2 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer"
-            >
-              <Zap className="w-4 h-4 fill-current shrink-0" />
-              Entrar en Modo Offline (Trabajar Sin Conexión)
-            </button>
+            {typeof window !== 'undefined' && (!navigator.onLine || error.includes('Failed to fetch') || error.includes('NetworkError')) && (
+              <button
+                type="button"
+                onClick={() => handleOfflineFallbackLogin('admin')}
+                className="w-full py-2 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <Zap className="w-4 h-4 fill-current shrink-0" />
+                Trabajar Sin Conexión (Red No Disponible)
+              </button>
+            )}
           </div>
         )}
 

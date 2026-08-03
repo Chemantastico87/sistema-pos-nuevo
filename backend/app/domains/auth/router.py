@@ -1,3 +1,4 @@
+import logging
 import uuid
 import hashlib
 from datetime import datetime, timedelta, timezone
@@ -6,7 +7,9 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import or_, update
+from sqlalchemy import or_, update, func
+
+logger = logging.getLogger("AuthRouter")
 
 from app.core.database import get_db
 from app.core.security import (
@@ -203,89 +206,60 @@ async def login(
     ip, user_agent = extract_client_info(request)
     clean_email = (data.email or "").strip().lower()
 
-    if not clean_email:
+    if not clean_email or not data.password:
         raise HTTPException(status_code=400, detail="validation.required_field")
 
-    # Buscar usuario por correo electrónico (búsqueda case-insensitive)
-    result = await db.execute(select(UserModel).where(func.lower(UserModel.email) == clean_email))
-    user = result.scalars().first()
+    # 1. Buscar usuario por correo electrónico (búsqueda case-insensitive)
+    try:
+        result = await db.execute(select(UserModel).where(func.lower(UserModel.email) == clean_email))
+        user = result.scalars().first()
+    except Exception as db_err:
+        logger.error(f"Error consultando usuario en login: {db_err}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"[Error BD] No se pudo verificar la cuenta: {str(db_err)}"
+        )
 
-    # AUTO-PROVISIONAMIENTO SIN FRICCIÓN DE CUENTAS EN PRODUCCIÓN:
-    # Si la empresa/usuario aún no existe en la BD online, se registra automáticamente al vuelo.
-    if not user:
-        comp_id = f"comp_{uuid.uuid4().hex[:12]}"
-        user_id = f"usr_{uuid.uuid4().hex[:12]}"
-        cash_id = f"cash_{uuid.uuid4().hex[:12]}"
-        email_prefix = clean_email.split("@")[0].replace(".", " ").capitalize()
-
-        try:
-            new_company = CompanyModel(
-                id=comp_id,
-                name=f"Comercio POS {email_prefix}",
-                email=clean_email,
-                country="España",
-                currency="EUR",
-                timezone="Europe/Madrid",
-                onboarding_completed=True,
-                plan="Enterprise",
-                subscription_status="active",
-                subscription_expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=365),
-                max_users=10,
-                max_products=2000
-            )
-            db.add(new_company)
-
-            new_user = UserModel(
-                id=user_id,
-                company_id=comp_id,
-                email=clean_email,
-                hashed_password=get_password_hash(data.password),
-                full_name=email_prefix,
-                role="admin",
-                status="active",
-                is_active=True,
-                permissions=ALL_ADMIN_PERMISSIONS,
-                email_verified=True
-            )
-            db.add(new_user)
-
-            new_cash = CashRegisterModel(
-                id=cash_id,
-                company_id=comp_id,
-                user_id=user_id,
-                name="Caja Principal",
-                status="closed",
-                opening_balance=0.00
-            )
-            db.add(new_cash)
-
-            await db.commit()
-            user = new_user
-        except Exception as e:
-            await db.rollback()
-            res2 = await db.execute(select(UserModel).where(func.lower(UserModel.email) == clean_email))
-            user = res2.scalars().first()
-
+    # 2. Si el usuario NO existe -> HTTP 401
     if not user:
         raise HTTPException(status_code=401, detail="errors.invalid_credentials")
 
     now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
 
-    # Verificar contraseña. Si es demo o recuperación, actualizar hash.
-    if not verify_password(data.password, user.hashed_password):
-        if "vendixpos.com" in clean_email or len(data.password) >= 6:
-            user.hashed_password = get_password_hash(data.password)
-            try:
-                await db.commit()
-            except Exception:
-                pass
-        else:
-            raise HTTPException(status_code=401, detail="errors.invalid_credentials")
+    # 3. Control de bloqueo por demasiados intentos fallidos -> HTTP 403
+    if user.locked_until and user.locked_until > now_utc:
+        raise HTTPException(
+            status_code=403,
+            detail="Cuenta bloqueada por seguridad debido a múltiples intentos fallidos. Intente más tarde."
+        )
 
-    # Garantizar estado activo y correo verificado para evitar bloqueos
-    user.email_verified = True
-    user.status = "active"
-    user.is_active = True
+    # 4. Verificación estricta de contraseña con hash bcrypt -> HTTP 401 si falla
+    if not verify_password(data.password, user.hashed_password):
+        user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
+        
+        if user.failed_login_attempts >= 5:
+            user.locked_until = now_utc + timedelta(minutes=15)
+            user.status = "blocked"
+        
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+
+        raise HTTPException(status_code=401, detail="errors.invalid_credentials")
+
+    # 5. Comprobar verificación de email -> HTTP 403
+    if not user.email_verified or user.status == "pending_email":
+        raise HTTPException(
+            status_code=403,
+            detail="Debes verificar tu dirección de correo electrónico antes de acceder."
+        )
+
+    # 6. Comprobar estado de activación de usuario -> HTTP 403
+    if user.status in ["blocked", "suspended", "deleted"] or not user.is_active:
+        raise HTTPException(status_code=403, detail="Tu cuenta se encuentra inactiva o suspendida.")
+
+    # Restablecer intentos fallidos tras login correcto
     user.failed_login_attempts = 0
     user.locked_until = None
     user.last_login_at = now_utc

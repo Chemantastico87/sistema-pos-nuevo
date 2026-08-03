@@ -18,29 +18,32 @@ const resolveBackendError = (status: number, errData: any): string => {
   if (errData && typeof errData === 'object') {
     const rawMsg = errData.detail || errData.message || errData.error_key;
     if (rawMsg) {
-      // Si el mensaje devuelto por la API es una clave de error conocida (ej: "error.user_not_found")
-      if (rawMsg.startsWith('error.') || rawMsg.startsWith('errors.')) {
-        return t(rawMsg);
+      if (typeof rawMsg === 'string' && (rawMsg.startsWith('error.') || rawMsg.startsWith('errors.'))) {
+        const translated = t(rawMsg);
+        if (translated && translated !== rawMsg) return translated;
       }
-      return rawMsg;
+      return typeof rawMsg === 'string' ? rawMsg : JSON.stringify(rawMsg);
     }
   }
 
-  // Traducción basada en Código HTTP de Estado
+  // Errores HTTP explícitos sin mensajes genéricos ni ocultaciones
   switch (status) {
+    case 400:
+      return 'Solicitud incorrecta (HTTP 400). Verifique los datos enviados.';
     case 401:
-      return t('errors.http_401');
+      return 'Credenciales inválidas (HTTP 401). Correo o contraseña incorrectos.';
     case 403:
-      return t('errors.http_403');
+      return 'Acceso restringido (HTTP 403). La cuenta requiere verificación de correo o está suspendida.';
     case 404:
-      return t('errors.http_404');
+      return 'Recurso no encontrado en el servidor (HTTP 404).';
     case 409:
-      return t('errors.http_409');
+      return 'Conflicto (HTTP 409). El registro o empresa ya existe.';
     case 422:
-      return t('errors.http_422');
+      return 'Error de formato en datos (HTTP 422). Verifique los campos ingresados.';
     case 500:
+      return 'El servidor devolvió HTTP 500. Fallo en la respuesta del backend.';
     default:
-      return t('errors.http_500');
+      return `Respuesta de error de servidor (HTTP ${status || 'Desconocido'}).`;
   }
 };
 
