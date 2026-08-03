@@ -37,7 +37,8 @@ export const App: React.FC = () => {
   const [showWizard, setShowWizard] = useState(true);
 
   useEffect(() => {
-    if (token) {
+    // Si estamos en modo offline o no hay token, omitir la verificación remota /auth/me
+    if (token && !token.startsWith('offline_')) {
       apiClient.get('/auth/me')
         .then((profile: any) => {
           if (profile && profile.id) {
@@ -60,8 +61,12 @@ export const App: React.FC = () => {
             });
           }
         })
-        .catch(() => {
-          logout();
+        .catch((err: any) => {
+          // SOLO cerrar sesión si el servidor explícitamente devuelve HTTP 401 (Token Inválido/Expirado)
+          // NUNCA cerrar sesión por errores de red, fallos 500 o desconexión
+          if (err?.response?.status === 401 || err?.status === 401) {
+            logout();
+          }
         });
     }
   }, [token, logout]);

@@ -306,7 +306,10 @@ async def login(
     )
     db.add(audit_success)
 
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception as e:
+        logger.warning(f"⚠️ Nota de sesión/auditoría login: {e}")
 
     token = create_access_token(
         subject=user.id,
