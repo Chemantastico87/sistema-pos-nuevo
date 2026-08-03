@@ -341,7 +341,7 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* BOTONES DE INICIO DE SESIÓN RÁPIDO (DEMO 1-CLICK) */}
+        {/* BOTONES DE INICIO DE SESIÓN RÁPIDO (DEMO 1-CLICK & OFFLINE) */}
         <div className="p-3 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-2">
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
             <span className="flex items-center gap-1.5 text-indigo-400">
@@ -349,7 +349,7 @@ export const LoginPage: React.FC = () => {
             </span>
             <span>{t('select_profile')}</span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-1.5">
             <button
               type="button"
               onClick={() => handleQuickDemoLogin('admin')}
@@ -370,6 +370,15 @@ export const LoginPage: React.FC = () => {
               className="py-1.5 px-2 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/40 rounded-xl text-emerald-200 text-xs font-bold transition-all text-center cursor-pointer"
             >
               {t('cashier_profile')}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleOfflineFallbackLogin('admin')}
+              className="py-1.5 px-2 bg-amber-600/20 hover:bg-amber-600/40 border border-amber-500/40 rounded-xl text-amber-200 text-xs font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1"
+              title="Trabajar en almacenamiento local sin servidor"
+            >
+              <Zap className="w-3 h-3 text-amber-400 fill-current" />
+              Offline
             </button>
           </div>
         </div>
