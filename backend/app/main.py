@@ -1,5 +1,6 @@
 import logging
 from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
@@ -21,6 +22,14 @@ app = FastAPI(
     version=settings.VERSION,
     openapi_url="/api/v1/openapi.json"
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"❌ Excepción no capturada en {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Error del servidor ({type(exc).__name__}): {str(exc)}"}
+    )
 
 # Middleware de CORS nativo
 app.add_middleware(

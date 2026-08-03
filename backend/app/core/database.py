@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 from app.core.config import settings
 
+from sqlalchemy.pool import NullPool
+
 # Forzar driver asíncrono según el dialecto (SQLite / PostgreSQL)
 db_url = settings.DATABASE_URL
 if db_url.startswith("sqlite://"):
@@ -12,10 +14,15 @@ elif db_url.startswith("postgres://"):
 elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+asyncpg://"):
     db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
 
+# En SQLite o entornos serverless (Vercel Lambdas), desactivar pool global (NullPool)
+# para evitar errores de hilos u objetos SQLite compartidos entre event loops distintos.
+engine_kwargs = {"echo": False, "future": True}
+if "sqlite" in db_url:
+    engine_kwargs["poolclass"] = NullPool
+
 engine = create_async_engine(
     db_url,
-    echo=False,
-    future=True
+    **engine_kwargs
 )
 
 AsyncSessionLocal = async_sessionmaker(
