@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '../services/apiClient';
 
 export interface User {
   id: string;
@@ -21,6 +22,9 @@ interface AuthState {
   refreshToken: string | null;
   setAuth: (user: User, token: string, refreshToken?: string) => void;
   setOnboardingCompleted: (completed: boolean) => void;
+  login: (email: string, password: string) => Promise<void>;
+  registerCompany: (data: any) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -38,7 +42,7 @@ const safeParseUser = (): User | null => {
   }
 };
 
-export const useAuthStore = create<AuthState>((set) => {
+export const useAuthStore = create<AuthState>((set, get) => {
   const initialUser = safeParseUser();
   const initialToken = initialUser ? localStorage.getItem('access_token') : null;
 
@@ -67,6 +71,44 @@ export const useAuthStore = create<AuthState>((set) => {
           plan: user.plan
         }).catch(() => {});
       }).catch(() => {});
+    },
+    login: async (email: string, password: string) => {
+      const res: any = await apiClient.post('/api/v1/auth/login', { email, password });
+      const user: User = {
+        id: res.user_id,
+        company_id: res.company_id,
+        full_name: res.full_name,
+        role: res.role,
+        status: res.status,
+        email_verified: res.email_verified,
+        permissions: res.permissions || [],
+        onboarding_completed: res.onboarding_completed,
+        currency: res.currency,
+        plan: res.plan,
+        subscription_status: res.subscription_status
+      };
+      get().setAuth(user, res.access_token, res.refresh_token);
+    },
+    registerCompany: async (data: any) => {
+      const res: any = await apiClient.post('/api/v1/auth/register-company', data);
+      const user: User = {
+        id: res.user_id,
+        company_id: res.company_id,
+        company_name: data.company_name,
+        full_name: res.full_name,
+        role: res.role,
+        status: res.status,
+        email_verified: res.email_verified,
+        permissions: res.permissions || [],
+        onboarding_completed: res.onboarding_completed,
+        currency: res.currency,
+        plan: res.plan,
+        subscription_status: res.subscription_status
+      };
+      get().setAuth(user, res.access_token, res.refresh_token);
+    },
+    forgotPassword: async (email: string) => {
+      await apiClient.post('/api/v1/auth/forgot-password', { email });
     },
     setOnboardingCompleted: (completed) => {
       set((state) => {

@@ -53,7 +53,7 @@ export const LoginPage: React.FC = () => {
     setError(null);
     setSuccess(null);
 
-    const cleanEmail = email.trim().lowerCase ? email.trim().toLowerCase() : email.trim();
+    const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !password) {
       setError('Por favor ingresa tu correo electrónico y contraseña.');
       return;
