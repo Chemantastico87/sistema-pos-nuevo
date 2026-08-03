@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Wifi, Bell, ChevronDown, User } from 'lucide-react';
+import { Search, Wifi, WifiOff, Bell, ChevronDown, User, Zap } from 'lucide-react';
 import { useAuthStore } from '../../core/store/authStore';
 import { useTranslation } from '../../core/store/languageStore';
 import { usePOSStore } from '../../core/store/posStore';
@@ -9,6 +9,8 @@ export const Navbar: React.FC = () => {
   const { user, logout } = useAuthStore();
   const { t } = useTranslation();
   const { searchQuery, setSearchQuery } = usePOSStore();
+
+  const isOfflineMode = typeof window !== 'undefined' && (!navigator.onLine || user?.id?.includes('offline'));
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs font-sans">
@@ -29,6 +31,14 @@ export const Navbar: React.FC = () => {
 
       {/* Right Controls Header */}
       <div className="flex items-center gap-4">
+        {/* Badge Modo Offline */}
+        {isOfflineMode && (
+          <div className="bg-amber-500/10 border border-amber-500/40 text-amber-700 px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs font-bold">
+            <WifiOff className="w-4 h-4 text-amber-600 animate-pulse" />
+            <span className="hidden sm:inline">⚡ Modo Offline (Guardado Local)</span>
+          </div>
+        )}
+
         {/* Selector de Idioma */}
         <LanguageSelector variant="light" showLabel={true} />
         {/* Cash Register Badge */}
@@ -41,8 +51,8 @@ export const Navbar: React.FC = () => {
 
         {/* Status Icons */}
         <div className="flex items-center gap-3 pl-2 border-l border-slate-200">
-          <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-emerald-600">
-            <Wifi className="w-4 h-4" />
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isOfflineMode ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-emerald-600'}`}>
+            {isOfflineMode ? <WifiOff className="w-4 h-4" /> : <Wifi className="w-4 h-4" />}
           </div>
 
           <div className="relative w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 cursor-pointer transition-colors">
