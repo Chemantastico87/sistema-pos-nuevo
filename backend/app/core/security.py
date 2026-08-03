@@ -1,7 +1,19 @@
 import re
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Any
 import jwt
+
+# Patch passlib compatibility with bcrypt >= 4.0.0 (avoids AttributeError: module 'bcrypt' has no attribute '__about__')
+try:
+    import bcrypt
+    if not hasattr(bcrypt, "__about__"):
+        class BcryptAbout:
+            __version__ = getattr(bcrypt, "__version__", "4.0.1")
+        bcrypt.__about__ = BcryptAbout()
+except Exception:
+    pass
+
 from passlib.context import CryptContext
 from app.core.config import settings
 
@@ -34,10 +46,22 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
         return pwd_context.verify(plain_password, hashed_password)
     except Exception:
-        return False
+        try:
+            import bcrypt
+            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+        except Exception:
+            return False
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    try:
+        return pwd_context.hash(password)
+    except Exception:
+        try:
+            import bcrypt
+            salt = bcrypt.gensalt()
+            return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+        except Exception:
+            return pwd_context.hash(password)
 
 def create_access_token(
     subject: str | Any,
