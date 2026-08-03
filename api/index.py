@@ -11,9 +11,9 @@ for d in [backend_dir, root_dir, current_dir]:
 
 try:
     from app.main import app
-except ModuleNotFoundError:
+except Exception:
     try:
         from backend.app.main import app
-    except ModuleNotFoundError:
+    except Exception:
         import app.main as app_main
         app = app_main.app
