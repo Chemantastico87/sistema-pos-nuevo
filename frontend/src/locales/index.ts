@@ -36,55 +36,41 @@ import aiEn from './en/ai.json';
 import reportsEn from './en/reports.json';
 import emailsEn from './en/emails.json';
 
-import commonPt from './pt/common.json';
-import authPt from './pt/auth.json';
-import dashboardPt from './pt/dashboard.json';
-import productsPt from './pt/products.json';
-import customersPt from './pt/customers.json';
-import inventoryPt from './pt/inventory.json';
-import cashPt from './pt/cash.json';
-import ticketsPt from './pt/tickets.json';
-import settingsPt from './pt/settings.json';
-import subscriptionsPt from './pt/subscriptions.json';
-import helpPt from './pt/help.json';
-import errorsPt from './pt/errors.json';
-import validationPt from './pt/validation.json';
-import notificationsPt from './pt/notifications.json';
-import cloudPt from './pt/cloud.json';
-import aiPt from './pt/ai.json';
-import reportsPt from './pt/reports.json';
-import emailsPt from './pt/emails.json';
-
-export type LanguageCode = 'es' | 'en' | 'pt';
+export type LanguageCode = 'es' | 'en';
 
 export interface LanguageOption {
   code: LanguageCode;
-  name: string;
+  label: string;
+  name?: string;
+  nativeName?: string;
   flag: string;
 }
 
 export const SUPPORTED_LANGUAGES: LanguageOption[] = [
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'pt', name: 'Português', flag: '🇵🇹' },
+  { code: 'es', label: 'Español', name: 'Español', nativeName: 'Español', flag: '🇪🇸' },
+  { code: 'en', label: 'English', name: 'English', nativeName: 'English', flag: '🇬🇧' },
 ];
 
-const combineModules = (...modules: Record<string, any>[]) => {
-  return modules.reduce((acc, mod) => ({ ...acc, ...mod }), {});
-};
-
-const createNestedNamespace = (modules: Record<string, Record<string, any>>) => {
-  const merged: Record<string, any> = {};
-  for (const [namespace, dict] of Object.entries(modules)) {
-    for (const [key, val] of Object.entries(dict)) {
-      merged[key] = val;
-      merged[`${namespace}.${key}`] = val;
-    }
+function createNestedNamespace(nsObj: Record<string, any>): Record<string, string> {
+  const result: Record<string, string> = {};
+  function traverse(current: any, prefix: string) {
+    if (!current || typeof current !== 'object') return;
+    Object.entries(current).forEach(([k, v]) => {
+      const fullKey = prefix ? `${prefix}.${k}` : k;
+      if (typeof v === 'string') {
+        result[fullKey] = v;
+      } else if (typeof v === 'object' && v !== null) {
+        traverse(v, fullKey);
+      }
+    });
   }
-  return merged;
-};
+  Object.entries(nsObj).forEach(([nsName, content]) => {
+    traverse(content, nsName);
+  });
+  return result;
+}
 
-export const TRANSLATIONS: Record<LanguageCode, Record<string, any>> = {
+export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
   es: createNestedNamespace({
     common: commonEs,
     auth: authEs,
@@ -124,26 +110,6 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, any>> = {
     ai: aiEn,
     reports: reportsEn,
     emails: emailsEn,
-  }),
-  pt: createNestedNamespace({
-    common: commonPt,
-    auth: authPt,
-    dashboard: dashboardPt,
-    products: productsPt,
-    customers: customersPt,
-    inventory: inventoryPt,
-    cash: cashPt,
-    tickets: ticketsPt,
-    settings: settingsPt,
-    subscriptions: subscriptionsPt,
-    help: helpPt,
-    errors: errorsPt,
-    validation: validationPt,
-    notifications: notificationsPt,
-    cloud: cloudPt,
-    ai: aiPt,
-    reports: reportsPt,
-    emails: emailsPt,
   }),
 };
 

@@ -148,3 +148,48 @@ class EmailService:
         </html>
         """
         return cls.send_email(to_email, subject, html_content)
+
+    @classmethod
+    def send_owner_notification_email(
+        cls,
+        event_type: str,
+        company_name: str,
+        owner_name: str,
+        owner_email: str,
+        plan_name: str = "Starter",
+        ip_address: str = "127.0.0.1",
+        country: str = "ES"
+    ):
+        owner_target = "chemadominguezlopez1987@gmail.com"
+        subject = f"🔔 [Alerta SaaS VENDIX] Evento: {event_type} - {company_name}"
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body {{ font-family: sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px; }}
+            .container {{ max-width: 600px; margin: 0 auto; background: #1e293b; border-radius: 16px; border: 1px solid #6366f1; padding: 30px; }}
+            .box {{ background: #0f172a; padding: 15px; border-radius: 10px; border-left: 4px solid #818cf8; margin: 15px 0; font-size: 13px; }}
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h3 style="color: #818cf8; margin-top: 0;">🔔 VENDIX SaaS HQ — Notificación Propietario</h3>
+            <p>Se ha registrado un evento crítico en la plataforma comercial:</p>
+            <div class="box">
+              <p>📌 <strong>Tipo de Evento:</strong> {event_type}</p>
+              <p>🏢 <strong>Empresa:</strong> {company_name}</p>
+              <p>👤 <strong>Administrador:</strong> {owner_name}</p>
+              <p>📧 <strong>Correo Electrónico:</strong> {owner_email}</p>
+              <p>💎 <strong>Plan:</strong> {plan_name}</p>
+              <p>🌐 <strong>Dirección IP:</strong> {ip_address}</p>
+              <p>🌍 <strong>País:</strong> {country}</p>
+            </div>
+            <p style="font-size: 12px; color: #94a3b8;">Acceso directo al panel de control: <a href="https://sistema-pos-nuevo.vercel.app/superadmin" style="color: #818cf8;">VENDIX Cloud HQ</a></p>
+          </div>
+        </body>
+        </html>
+        """
+        return cls.send_email(owner_target, subject, html_content)
+

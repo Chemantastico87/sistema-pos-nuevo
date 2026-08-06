@@ -12,19 +12,19 @@ interface LanguageState {
 
 const detectBrowserLanguage = (): LanguageCode => {
   const stored = localStorage.getItem('vendix_lang') as LanguageCode;
-  if (stored && ['es', 'en', 'pt'].includes(stored)) {
+  if (stored && ['es', 'en'].includes(stored)) {
     return stored;
   }
 
   // Cookie fallback
   const match = typeof document !== 'undefined' ? document.cookie.match(/(?:^|; )vendix_lang=([^;]*)/) : null;
-  if (match && ['es', 'en', 'pt'].includes(match[1])) {
+  if (match && ['es', 'en'].includes(match[1])) {
     return match[1] as LanguageCode;
   }
 
   // Browser language auto-detection
   const browserLang = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language.split('-')[0].toLowerCase() : 'es';
-  if (['es', 'en', 'pt'].includes(browserLang)) {
+  if (['es', 'en'].includes(browserLang)) {
     return browserLang as LanguageCode;
   }
 
@@ -42,17 +42,13 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
     }
     set({ language: lang });
   },
-  t: (key: string, params?: Record<string, string | number>) => {
-    const activeLang = get().language;
-    return resolveTranslation(activeLang, key, params);
+  t: (key, params) => {
+    const currentLang = get().language || 'es';
+    return resolveTranslation(currentLang, key, params);
   },
 }));
 
 export const useTranslation = () => {
-  const language = useLanguageStore((s) => s.language);
-  const setLanguage = useLanguageStore((s) => s.setLanguage);
-  const t = (key: string, params?: Record<string, string | number>) => {
-    return resolveTranslation(language, key, params);
-  };
-  return { language, setLanguage, t };
+  const { language, setLanguage, t } = useLanguageStore();
+  return { t, language, setLanguage };
 };

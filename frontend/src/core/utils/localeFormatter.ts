@@ -6,7 +6,6 @@ import { LanguageCode } from '../../locales';
 const LOCALE_MAP: Record<LanguageCode, string> = {
   es: 'es-ES',
   en: 'en-US',
-  pt: 'pt-BR',
 };
 
 /**

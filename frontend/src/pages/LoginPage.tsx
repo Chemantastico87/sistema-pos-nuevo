@@ -63,35 +63,8 @@ export const LoginPage: React.FC = () => {
     try {
       await login(cleanEmail, password);
     } catch (err: any) {
-      console.warn('⚠️ Fallo en autenticación online, activando respaldo local offline:', err);
-      
-      // AUTO-RESPALDO LOCAL OFFLINE HÍBRIDO (Nunca bloquea al usuario)
-      try {
-        const synced = await performOfflineCompanyLogin(cleanEmail);
-        useAuthStore.setState({
-          token: synced?.offline_token || `offline_${cleanEmail}_${Date.now()}`,
-          refreshToken: synced?.offline_token || `offline_${cleanEmail}_${Date.now()}`,
-          user: {
-            id: synced?.user_id || `usr_${cleanEmail.replace(/[^a-z0-9]/g, '')}`,
-            company_id: synced?.company_id || `comp_${cleanEmail.replace(/[^a-z0-9]/g, '')}`,
-            email: cleanEmail,
-            full_name: synced?.full_name || cleanEmail.split('@')[0],
-            role: synced?.role || 'admin',
-            status: 'active',
-            email_verified: true,
-            permissions: ['*'],
-            onboarding_completed: true,
-            currency: synced?.currency || 'EUR',
-            plan: synced?.plan || 'Starter',
-            subscription_status: 'trial'
-          },
-          isAuthenticated: true,
-          isOfflineMode: true
-        });
-        return;
-      } catch (offlineErr) {
-        setError(typeof err === 'string' ? err : err.message || 'Error al iniciar sesión');
-      }
+      const msg = typeof err === 'string' ? err : (err?.message || 'Correo electrónico o contraseña incorrectos.');
+      setError(msg);
     } finally {
       setIsLoading(false);
     }

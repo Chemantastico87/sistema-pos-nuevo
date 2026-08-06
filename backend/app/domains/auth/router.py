@@ -162,6 +162,16 @@ async def register_company(
         plan_name="Starter",
         trial_days=14
     )
+    background_tasks.add_task(
+        EmailService.send_owner_notification_email,
+        event_type="Nueva Empresa Registrada (Trial 14 días)",
+        company_name=data.company_name,
+        owner_name=data.owner_name,
+        owner_email=data.email,
+        plan_name="Starter",
+        ip_address=ip,
+        country=data.country or "ES"
+    )
 
     # 7. Crear Refresh Token de sesión inicial
     ref_token_val = f"ref_{uuid.uuid4().hex}"
@@ -620,9 +630,63 @@ async def update_company_settings(
     await db.commit()
     await db.refresh(company)
 
-    return {
-        "message": "Configuración de la empresa actualizada correctamente",
-        "company_id": company.id,
-        "onboarding_completed": company.onboarding_completed
-    }
+    return {"message": "Configuración de empresa actualizada correctamente"}
 
+
+@router.post("/forgot-password")
+@router.post("/forgot-password/")
+async def forgot_password(
+    data: ForgotPasswordRequest,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db)
+):
+    clean_email = (data.email or "").strip().lower()
+    if not clean_email:
+        raise HTTPException(status_code=400, detail="El correo electrónico es requerido.")
+
+    user_res = await db.execute(select(UserModel).where(func.lower(UserModel.email) == clean_email))
+    user = user_res.scalars().first()
+
+    # Si el usuario existe, generar token y enviar correo
+    if user:
+        reset_token = f"rst_{uuid.uuid4().hex}"
+        user.reset_token = reset_token
+        user.reset_token_expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=30)
+        await db.commit()
+
+        reset_url = f"{request.base_url}reset-password?token={reset_token}"
+        background_tasks.add_task(
+            EmailService.send_password_reset_email,
+            to_email=user.email,
+            full_name=user.full_name,
+            reset_url=reset_url
+        )
+
+    return {"message": "Si la cuenta existe, se ha enviado un correo con instrucciones para restablecer la contraseña."}
+
+
+@router.post("/reset-password")
+@router.post("/reset-password/")
+async def reset_password(
+    data: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    if not data.token or not data.new_password:
+        raise HTTPException(status_code=400, detail="El token y la nueva contraseña son obligatorios.")
+
+    user_res = await db.execute(select(UserModel).where(UserModel.reset_token == data.token))
+    user = user_res.scalars().first()
+
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    if not user or not user.reset_token_expires or user.reset_token_expires < now_utc:
+        raise HTTPException(status_code=400, detail="El enlace de restablecimiento es inválido o ha expirado.")
+
+    user.hashed_password = get_password_hash(data.new_password)
+    user.reset_token = None
+    user.reset_token_expires = None
+    user.failed_login_attempts = 0
+    user.locked_until = None
+
+    await db.commit()
+    return {"message": "Contraseña actualizada exitosamente. Por favor inicia sesión con tu nueva contraseña."}
