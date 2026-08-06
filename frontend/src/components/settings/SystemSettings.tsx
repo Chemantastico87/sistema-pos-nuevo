@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Building, Receipt, Save, CheckCircle2 } from 'lucide-react';
+import { Building, Receipt, Save, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useSettingsStore } from '../../core/store/settingsStore';
+import { apiClient } from '../../core/services/apiClient';
 
 export const SystemSettings: React.FC = () => {
   const { currency, taxRate, companyName, taxId, phone, address, paperWidth, setSettings } = useSettingsStore();
@@ -13,21 +14,56 @@ export const SystemSettings: React.FC = () => {
   const [formAddress, setFormAddress] = useState(address);
   const [formPaperWidth, setFormPaperWidth] = useState(paperWidth);
   const [savedMsg, setSavedMsg] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSettings({
-      currency: formCurrency,
-      taxRate: parseFloat(formTaxRate) || 0,
-      companyName: formCompanyName,
-      taxId: formTaxId,
-      phone: formPhone,
-      address: formAddress,
-      paperWidth: formPaperWidth,
-    });
+    setIsSubmitting(true);
+    setErrorMsg(null);
 
-    setSavedMsg(true);
-    setTimeout(() => setSavedMsg(false), 3500);
+    const numericTaxRate = parseFloat(formTaxRate) || 0;
+
+    try {
+      // 1. Sincronización persistente en el Backend Database
+      await apiClient.put('/api/v1/auth/company-settings', {
+        name: formCompanyName,
+        tax_id: formTaxId,
+        phone: formPhone,
+        address: formAddress,
+        currency: formCurrency,
+        default_vat_rate: numericTaxRate,
+      });
+
+      // 2. Persistencia en el Estado Local Zustand y LocalStorage
+      setSettings({
+        currency: formCurrency,
+        taxRate: numericTaxRate,
+        companyName: formCompanyName,
+        taxId: formTaxId,
+        phone: formPhone,
+        address: formAddress,
+        paperWidth: formPaperWidth,
+      });
+
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 4000);
+    } catch (err: any) {
+      console.warn('⚠️ Error al guardar configuración en el servidor:', err);
+      // Respaldo en estado local con aviso de advertencia
+      setSettings({
+        currency: formCurrency,
+        taxRate: numericTaxRate,
+        companyName: formCompanyName,
+        taxId: formTaxId,
+        phone: formPhone,
+        address: formAddress,
+        paperWidth: formPaperWidth,
+      });
+      setErrorMsg(typeof err === 'string' ? err : (err?.message || 'Configuración guardada localmente. Hubo un problema al sincronizar con el servidor.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -40,7 +76,14 @@ export const SystemSettings: React.FC = () => {
       {savedMsg && (
         <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-extrabold flex items-center gap-2 shadow-xs animate-in fade-in">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          <span>¡Configuración guardada exitosamente! El cambio de moneda ({formCurrency}) ya está activo en todo el sistema.</span>
+          <span>¡Configuración guardada exitosamente y sincronizada en la base de datos! El cambio de moneda ({formCurrency}) está activo.</span>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-extrabold flex items-center gap-2 shadow-xs animate-in fade-in">
+          <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+          <span>{errorMsg}</span>
         </div>
       )}
 
@@ -140,8 +183,13 @@ export const SystemSettings: React.FC = () => {
           </div>
         </div>
 
-        <button type="submit" className="btn-indigo px-8 py-3.5 text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-indigo-600/30 hover:scale-[1.01]">
-          <Save className="w-4 h-4" /> Guardar Cambios de Configuración
+        <button 
+          type="submit" 
+          disabled={isSubmitting} 
+          className="btn-indigo px-8 py-3.5 text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-indigo-600/30 hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {isSubmitting ? 'Guardando...' : 'Guardar Cambios de Configuración'}
         </button>
       </form>
     </div>
