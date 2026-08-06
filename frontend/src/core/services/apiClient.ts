@@ -76,13 +76,17 @@ export const apiClient = {
     }
   },
 
-  async post<T>(endpoint: string, body: any): Promise<T> {
-    const url = endpoint.startsWith('/api') ? endpoint : `${BASE_URL}${endpoint}`;
+  async post<T>(endpoint: string, body?: any, config?: any): Promise<T> {
+    let url = endpoint.startsWith('/api') ? endpoint : `${BASE_URL}${endpoint}`;
+    if (config?.params) {
+      const q = new URLSearchParams(config.params).toString();
+      url += (url.includes('?') ? '&' : '?') + q;
+    }
     try {
       const res = await fetch(url, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(body),
+        ...(body !== undefined && body !== null ? { body: JSON.stringify(body) } : {}),
       });
       if (!res.ok) {
         let errData: any = null;

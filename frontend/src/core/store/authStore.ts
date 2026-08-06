@@ -5,6 +5,7 @@ export interface User {
   id: string;
   company_id: string;
   company_name?: string;
+  email?: string;
   full_name: string;
   role: string;
   status?: string;
@@ -20,6 +21,8 @@ interface AuthState {
   user: User | null;
   token: string | null;
   refreshToken: string | null;
+  isAuthenticated?: boolean;
+  isOfflineMode?: boolean;
   setAuth: (user: User, token: string, refreshToken?: string) => void;
   setOnboardingCompleted: (completed: boolean) => void;
   login: (email: string, password: string) => Promise<void>;

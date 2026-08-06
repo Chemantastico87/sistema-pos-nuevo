@@ -6,7 +6,7 @@ interface PluginItem {
   name: string;
   category: string;
   description: string;
-  useCase: string;
+  useCase?: string;
   version: string;
   isEnabled: boolean;
   icon: any;
